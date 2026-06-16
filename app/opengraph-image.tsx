@@ -55,7 +55,7 @@ export default function OpengraphImage() {
         </div>
 
         <div style={{ fontSize: "26px", color: "#bcd3ff" }}>
-          by Connie Wang · cv.wowonderwhy.com
+          by Connie Wang
         </div>
       </div>
     ),
