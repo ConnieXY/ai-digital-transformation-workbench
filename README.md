@@ -4,7 +4,7 @@
 
 一个面向 B2B / 咨询场景的 AI 数智化转型工作台 Demo —— 以「**Diagnose → Design → Deliver**」为方法主线，串起诊断、方案、落地三个模块，并以**制造业质量异常闭环**作为完整的场景化样板。
 
-🔗 **在线体验**：_部署后补充链接_
+🔗 **在线体验**：https://aiworkbench.wowonderwhy.com
 
 ---
 

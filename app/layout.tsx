@@ -13,8 +13,7 @@ const siteDescription =
   "从企业效能诊断、行业方案生成，到具体业务场景落地，帮助企业将模糊的 AI 转型诉求转化为可执行方案。";
 
 export const metadata: Metadata = {
-  // 部署到正式域名后，将此处改为实际地址（如 https://workbench.wowonderwhy.com）
-  metadataBase: new URL("https://workbench.wowonderwhy.com"),
+  metadataBase: new URL("https://aiworkbench.wowonderwhy.com"),
   title: siteName,
   description: siteDescription,
   openGraph: {
