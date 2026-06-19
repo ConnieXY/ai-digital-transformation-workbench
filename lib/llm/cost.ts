@@ -19,13 +19,22 @@ const PRICES: Record<string, Price> = {
   "text-embedding-v3": { input: 0.05, output: 0 },
 };
 
+/** 按系列前缀兜底匹配价格（应对各平台的具体变体名，如 deepseek-v4-flash）。 */
+function matchByPrefix(model: string): Price | undefined {
+  if (model.startsWith("gpt-4o-mini")) return PRICES["gpt-4o-mini"];
+  if (model.startsWith("gpt-4o")) return PRICES["gpt-4o"];
+  if (model.startsWith("deepseek")) return PRICES["deepseek-chat"];
+  if (model.startsWith("qwen")) return PRICES["qwen-plus"];
+  return undefined;
+}
+
 /** 根据模型与 token 数估算成本（USD）。未知模型返回 0。 */
 export function estimateCost(
   model: string,
   inputTokens: number,
   outputTokens: number,
 ): number {
-  const p = PRICES[model];
+  const p = PRICES[model] ?? matchByPrefix(model);
   if (!p) return 0;
   const cost =
     (inputTokens / 1_000_000) * p.input +
