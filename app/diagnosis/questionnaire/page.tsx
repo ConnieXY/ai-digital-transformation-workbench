@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import PageShell from "@/components/PageShell";
 import CompanyInfoForm from "@/components/diagnosis/CompanyInfoForm";
 import QuestionItem from "@/components/diagnosis/QuestionItem";
+import { getSessionId } from "@/lib/sessionId";
 import {
   type Answers,
   type CompanyInfo,
@@ -30,6 +31,7 @@ export default function QuestionnairePage() {
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo>(emptyCompanyInfo);
   const [answers, setAnswers] = useState<Answers>({});
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const answeredCount = Object.keys(answers).length;
   const totalQuestions = questions.length;
@@ -53,7 +55,7 @@ export default function QuestionnairePage() {
     setError(null);
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     // 简单校验：企业名称必填 + 所有问题均已作答
     if (!companyInfo.companyName.trim()) {
       setError("请先填写企业名称。");
@@ -67,12 +69,34 @@ export default function QuestionnairePage() {
       return;
     }
 
+    // 始终保留 localStorage：离线 / 未配置后端时的兜底
     const submission: DiagnosisSubmission = {
       companyInfo,
       answers,
       submittedAt: new Date().toISOString(),
     };
     localStorage.setItem(DIAGNOSIS_STORAGE_KEY, JSON.stringify(submission));
+
+    // 尝试持久化到后端（成功则用 id 跳转，失败则回落 localStorage 流程）
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/diagnosis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: getSessionId(),
+          companyInfo,
+          answers,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.persisted && data.id) {
+        router.push(`/diagnosis/report?id=${data.id}`);
+        return;
+      }
+    } catch {
+      // 网络/后端异常 → 走兜底
+    }
     router.push("/diagnosis/report");
   }
 
@@ -203,10 +227,11 @@ export default function QuestionnairePage() {
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 sm:w-auto"
+                disabled={submitting}
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
-                生成诊断报告
-                <span aria-hidden>→</span>
+                {submitting ? "生成中…" : "生成诊断报告"}
+                {!submitting && <span aria-hidden>→</span>}
               </button>
             </div>
           </div>

@@ -12,6 +12,7 @@ import {
   SOLUTION_CONTEXT_KEY,
 } from "@/data/diagnosis";
 import { type DiagnosisResult, scoreDiagnosis } from "@/lib/scoring";
+import type { DiagnosisInsight } from "@/lib/schemas/diagnosis";
 
 const MATURITY_SCALE = ["L1", "L2", "L3", "L4", "L5"];
 
@@ -55,16 +56,44 @@ function formatDate(iso: string): string {
 export default function ReportPage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [submission, setSubmission] = useState<DiagnosisSubmission | null>(null);
+  const [insight, setInsight] = useState<DiagnosisInsight | null>(null);
+  const [source, setSource] = useState<"llm" | "rule" | null>(null);
 
   useEffect(() => {
     setMounted(true);
-    try {
-      const raw = localStorage.getItem(DIAGNOSIS_STORAGE_KEY);
-      if (raw) setSubmission(JSON.parse(raw) as DiagnosisSubmission);
-    } catch {
-      setSubmission(null);
+
+    const loadLocal = () => {
+      try {
+        const raw = localStorage.getItem(DIAGNOSIS_STORAGE_KEY);
+        if (raw) setSubmission(JSON.parse(raw) as DiagnosisSubmission);
+      } catch {
+        setSubmission(null);
+      }
+    };
+
+    const id = new URLSearchParams(window.location.search).get("id");
+    if (!id) {
+      loadLocal();
+      return;
     }
+
+    // 优先从后端按 id 读取（真实持久化）
+    setLoading(true);
+    fetch(`/api/diagnosis/${id}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("not found"))))
+      .then((d) => {
+        setSubmission({
+          companyInfo: d.companyInfo,
+          answers: d.answers,
+          submittedAt: d.submittedAt,
+        });
+        setInsight((d.insight as DiagnosisInsight) ?? null);
+        setSource((d.source as "llm" | "rule") ?? null);
+      })
+      .catch(loadLocal)
+      .finally(() => setLoading(false));
   }, []);
 
   // 首屏（localStorage 读取前）不渲染内容，避免水合不一致
@@ -72,6 +101,17 @@ export default function ReportPage() {
     return (
       <PageShell>
         <div className="container-page py-24" />
+      </PageShell>
+    );
+  }
+
+  // 从后端按 id 拉取中
+  if (loading) {
+    return (
+      <PageShell>
+        <section className="container-page py-24 text-center">
+          <p className="text-sm text-ink-500">正在生成诊断报告…</p>
+        </section>
       </PageShell>
     );
   }
@@ -146,9 +186,27 @@ export default function ReportPage() {
                 {companyInfo.companyName || "未命名企业"}
               </h1>
             </div>
-            <p className="text-sm text-ink-500">
-              报告生成日期：{formatDate(submittedAt)}
-            </p>
+            <div className="flex flex-col items-start gap-1.5 sm:items-end">
+              <p className="text-sm text-ink-500">
+                报告生成日期：{formatDate(submittedAt)}
+              </p>
+              {source && (
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    source === "llm"
+                      ? "bg-brand-50 text-brand-700"
+                      : "bg-slate-100 text-ink-500"
+                  }`}
+                >
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      source === "llm" ? "bg-brand-500" : "bg-slate-400"
+                    }`}
+                  />
+                  {source === "llm" ? "AI 生成洞察" : "规则引擎（未接 LLM）"}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -177,6 +235,69 @@ export default function ReportPage() {
             </div>
           )}
         </ReportSection>
+
+        {/* AI 洞察（仅在接入 LLM 时出现） */}
+        {insight && (
+          <section className="rounded-2xl border border-brand-200 bg-brand-50/40 p-6 shadow-card sm:p-8">
+            <div className="flex items-center gap-2.5">
+              <span className="grid h-7 w-7 flex-none place-items-center rounded-lg bg-brand-600 text-xs font-bold text-white">
+                AI
+              </span>
+              <h2 className="text-lg font-bold tracking-tight text-ink-900">
+                AI 诊断洞察
+              </h2>
+            </div>
+            <p className="mt-4 text-base font-semibold text-ink-900">
+              {insight.headline}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-ink-700">
+              {insight.summary}
+            </p>
+            <div className="mt-5 grid gap-5 sm:grid-cols-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-ink-500">
+                  关键风险
+                </p>
+                <ul className="mt-2 space-y-2">
+                  {insight.keyRisks.map((r) => (
+                    <li key={r.risk} className="text-sm leading-relaxed text-ink-700">
+                      <span className="font-medium text-ink-900">
+                        {r.dimension}：
+                      </span>
+                      {r.risk}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-ink-500">
+                  快赢动作
+                </p>
+                <ul className="mt-2 space-y-1.5">
+                  {insight.quickWins.map((w) => (
+                    <li key={w} className="flex gap-2 text-sm leading-relaxed text-ink-700">
+                      <span aria-hidden className="mt-1.5 h-1 w-1 flex-none rounded-full bg-brand-500" />
+                      {w}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-ink-500">
+                  汇报论点
+                </p>
+                <ul className="mt-2 space-y-1.5">
+                  {insight.execTalkingPoints.map((t) => (
+                    <li key={t} className="flex gap-2 text-sm leading-relaxed text-ink-700">
+                      <span aria-hidden className="mt-1.5 h-1 w-1 flex-none rounded-full bg-brand-500" />
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* 02 总体成熟度等级 */}
         <ReportSection index="02" title="总体成熟度等级">
