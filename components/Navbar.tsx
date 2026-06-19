@@ -10,6 +10,7 @@ const navLinks = [
   { href: "/diagnosis", label: "企业诊断" },
   { href: "/solution-builder", label: "行业方案" },
   { href: "/manufacturing-demo", label: "制造业 Demo" },
+  { href: "/traces", label: "Trace" },
   { href: "/about", label: "项目说明" },
 ];
 
