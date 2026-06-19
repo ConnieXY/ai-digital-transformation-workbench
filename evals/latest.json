@@ -1,0 +1,165 @@
+{
+  "startedAt": "2026-06-19T23:07:33.902Z",
+  "baseUrl": "http://localhost:3000",
+  "cases": [
+    {
+      "id": "diagnosis-mfg-low-ai",
+      "type": "diagnosis",
+      "checks": [
+        {
+          "name": "schema_valid",
+          "passed": true
+        },
+        {
+          "name": "keywords",
+          "passed": true,
+          "score": 1,
+          "detail": "命中 3/3: 流程、数据、AI"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "solution-mfg-quality",
+      "type": "solution",
+      "checks": [
+        {
+          "name": "schema_valid",
+          "passed": true
+        },
+        {
+          "name": "citations_valid",
+          "passed": true
+        },
+        {
+          "name": "keywords",
+          "passed": true,
+          "score": 1,
+          "detail": "命中 2/2: 质量、数据"
+        },
+        {
+          "name": "faithfulness",
+          "passed": false,
+          "score": 0.5,
+          "detail": "2/4 被证据支撑；存疑：AI赋能质量异常闭环：在看板基础上叠加A、防错与设备预防性维护：实施防错设计（如扫"
+        }
+      ],
+      "passed": false
+    },
+    {
+      "id": "solution-retail-weak-corpus",
+      "type": "solution",
+      "checks": [
+        {
+          "name": "schema_valid",
+          "passed": true
+        },
+        {
+          "name": "citations_valid",
+          "passed": true
+        },
+        {
+          "name": "keywords",
+          "passed": true,
+          "score": 1,
+          "detail": "命中 1/1: 数据"
+        },
+        {
+          "name": "faithfulness",
+          "passed": false,
+          "score": 0,
+          "detail": "0/2 被证据支撑；存疑：库存周转优化：整合POS销售数据与CRM、会员复购提升：基于CRM会员数据，构建R"
+        }
+      ],
+      "passed": false
+    },
+    {
+      "id": "incident-scratch-supplier",
+      "type": "incident",
+      "checks": [
+        {
+          "name": "schema_valid",
+          "passed": true
+        },
+        {
+          "name": "citations_valid",
+          "passed": true
+        },
+        {
+          "name": "top_cause_relevant",
+          "passed": true,
+          "detail": "首要原因：新供应商外壳材料表面硬度下降，导致搬运或组装过程中易产生划痕"
+        },
+        {
+          "name": "keywords",
+          "passed": true,
+          "score": 1,
+          "detail": "命中 2/2: 隔离、检验"
+        },
+        {
+          "name": "faithfulness",
+          "passed": false,
+          "score": 0.5,
+          "detail": "2/4 被证据支撑；存疑：组装工序外观检验未能有效拦截，可能因限度、供应商换料未触发加严来料检验和留样比对流"
+        }
+      ],
+      "passed": false
+    },
+    {
+      "id": "retrieval-scratch-case",
+      "type": "retrieval",
+      "checks": [
+        {
+          "name": "recall@k",
+          "passed": true,
+          "detail": "命中（位次 1）"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "id": "retrieval-iqc",
+      "type": "retrieval",
+      "checks": [
+        {
+          "name": "recall@k",
+          "passed": true,
+          "detail": "命中（位次 1）"
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "summary": {
+    "totalCases": 6,
+    "passedCases": 3,
+    "totalChecks": 17,
+    "passedChecks": 14,
+    "byMetric": {
+      "schema_valid": {
+        "passed": 4,
+        "total": 4
+      },
+      "keywords": {
+        "passed": 4,
+        "total": 4
+      },
+      "citations_valid": {
+        "passed": 3,
+        "total": 3
+      },
+      "faithfulness": {
+        "passed": 0,
+        "total": 3
+      },
+      "top_cause_relevant": {
+        "passed": 1,
+        "total": 1
+      },
+      "recall@k": {
+        "passed": 2,
+        "total": 2
+      }
+    }
+  }
+}

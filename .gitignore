@@ -12,3 +12,6 @@ next-env.d.ts
 
 # local Claude Code settings (personal)
 .claude/settings.local.json
+
+# eval 运行产物（保留 evals/latest.json）
+evals/results/
