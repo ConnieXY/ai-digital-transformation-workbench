@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import PageShell from "@/components/PageShell";
+import ReviewReportView from "@/components/manufacturing/ReviewReportView";
 import {
   type IncidentInput,
   INCIDENT_STORAGE_KEY,
 } from "@/data/manufacturing";
+import type { ReviewReport } from "@/lib/schemas/incident";
 import { analyzeIncident } from "@/lib/incidentAnalyzer";
 import { buildTasks, taskColumns } from "@/lib/taskBuilder";
 
@@ -35,24 +37,86 @@ function formatDate(iso: string): string {
   )}`;
 }
 
+interface LlmReportPayload {
+  incident: { product_name?: string | null; batch?: string | null; incident_type?: string | null };
+  report: ReviewReport;
+  createdAt: string | null;
+}
+
 export default function ReviewReportPage() {
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [incident, setIncident] = useState<IncidentInput | null>(null);
+  const [llm, setLlm] = useState<LlmReportPayload | null>(null);
 
   useEffect(() => {
     setMounted(true);
-    try {
-      const raw = localStorage.getItem(INCIDENT_STORAGE_KEY);
-      if (raw) setIncident(JSON.parse(raw) as IncidentInput);
-    } catch {
-      setIncident(null);
+    const loadLocal = () => {
+      try {
+        const raw = localStorage.getItem(INCIDENT_STORAGE_KEY);
+        if (raw) setIncident(JSON.parse(raw) as IncidentInput);
+      } catch {
+        setIncident(null);
+      }
+    };
+
+    const id = new URLSearchParams(window.location.search).get("id");
+    if (!id) {
+      loadLocal();
+      return;
     }
+    setLoading(true);
+    (async () => {
+      try {
+        let res = await fetch(`/api/incidents/${id}/review`);
+        let d = res.ok ? await res.json() : null;
+        // 尚未生成 → 触发一次生成
+        if (d && !d.report) {
+          const g = await fetch(`/api/incidents/${id}/review`, { method: "POST" });
+          if (g.ok) {
+            res = await fetch(`/api/incidents/${id}/review`);
+            d = res.ok ? await res.json() : d;
+          }
+        }
+        if (d?.report) {
+          setLlm({ incident: d.incident, report: d.report, createdAt: d.createdAt });
+        } else {
+          loadLocal();
+        }
+      } catch {
+        loadLocal();
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   if (!mounted) {
     return (
       <PageShell>
         <div className="container-page py-24" />
+      </PageShell>
+    );
+  }
+
+  if (loading) {
+    return (
+      <PageShell>
+        <section className="container-page py-24 text-center">
+          <p className="text-sm text-ink-500">正在生成复盘报告…</p>
+        </section>
+      </PageShell>
+    );
+  }
+
+  if (llm) {
+    return (
+      <PageShell>
+        <ReviewReportView
+          incident={llm.incident}
+          report={llm.report}
+          createdAt={llm.createdAt}
+        />
       </PageShell>
     );
   }

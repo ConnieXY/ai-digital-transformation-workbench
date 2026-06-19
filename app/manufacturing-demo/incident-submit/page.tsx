@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PageShell from "@/components/PageShell";
+import { getSessionId } from "@/lib/sessionId";
 import {
   type IncidentInput,
   INCIDENT_STORAGE_KEY,
@@ -30,6 +31,7 @@ export default function IncidentSubmitPage() {
   const router = useRouter();
   const [incident, setIncident] = useState<IncidentInput>(emptyIncident);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   function setField<K extends keyof IncidentInput>(
     field: K,
@@ -43,12 +45,28 @@ export default function IncidentSubmitPage() {
     setError(null);
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!incident.incidentDescription.trim()) {
       setError("请填写异常描述，AI 将据此进行分析。");
       return;
     }
     localStorage.setItem(INCIDENT_STORAGE_KEY, JSON.stringify(incident));
+
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/incidents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: getSessionId(), incident }),
+      });
+      const data = await res.json();
+      if (res.ok && data.persisted && data.id) {
+        router.push(`/manufacturing-demo/analysis?id=${data.id}`);
+        return;
+      }
+    } catch {
+      // 后端不可用 → 规则兜底
+    }
     router.push("/manufacturing-demo/analysis");
   }
 
@@ -254,10 +272,11 @@ export default function IncidentSubmitPage() {
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700"
+                disabled={submitting}
+                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                AI 分析异常
-                <span aria-hidden>→</span>
+                {submitting ? "提交中…" : "AI 分析异常"}
+                {!submitting && <span aria-hidden>→</span>}
               </button>
             </div>
           </div>

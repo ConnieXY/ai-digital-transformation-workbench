@@ -8,6 +8,37 @@ import type { IncidentAnalysis } from "@/lib/schemas/incident";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/** 读取最新复盘报告（含异常上下文，供报告页渲染）。 */
+export async function GET(
+  _req: Request,
+  { params }: { params: { id: string } },
+) {
+  const supabase = getSupabaseAdmin();
+  if (!supabase) return NextResponse.json({ error: "db not configured" }, { status: 503 });
+
+  const { data: incident } = await supabase
+    .from("incidents")
+    .select("*")
+    .eq("id", params.id)
+    .single();
+  if (!incident) return NextResponse.json({ error: "not found" }, { status: 404 });
+
+  const { data: row } = await supabase
+    .from("review_reports")
+    .select("report, source, created_at")
+    .eq("incident_id", params.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return NextResponse.json({
+    incident,
+    report: row?.report ?? null,
+    source: row?.source ?? null,
+    createdAt: row?.created_at ?? null,
+  });
+}
+
 export async function POST(
   _req: Request,
   { params }: { params: { id: string } },
