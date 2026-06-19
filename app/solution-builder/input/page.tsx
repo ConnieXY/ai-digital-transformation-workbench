@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PageShell from "@/components/PageShell";
 import ChipMultiSelect from "@/components/solution/ChipMultiSelect";
+import { getSessionId } from "@/lib/sessionId";
 import { SOLUTION_CONTEXT_KEY } from "@/data/diagnosis";
 import {
   type SolutionInput,
@@ -26,6 +27,7 @@ export default function SolutionInputPage() {
   const router = useRouter();
   const [input, setInput] = useState<SolutionInput>(emptySolutionInput);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // 若存在模块一诊断结果，预填行业、规模与现状系统
   useEffect(() => {
@@ -98,12 +100,29 @@ export default function SolutionInputPage() {
     setError(null);
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (input.painPoints.length === 0) {
       setError("请至少选择一个业务痛点，以便生成针对性的解决方案。");
       return;
     }
+    // 始终保留 localStorage 兜底
     localStorage.setItem(SOLUTION_INPUT_KEY, JSON.stringify(input));
+
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/solutions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: getSessionId(), input }),
+      });
+      const data = await res.json();
+      if (res.ok && data.persisted && data.id) {
+        router.push(`/solution-builder/result?id=${data.id}`);
+        return;
+      }
+    } catch {
+      // 后端不可用 → 走规则兜底
+    }
     router.push("/solution-builder/result");
   }
 
@@ -277,10 +296,11 @@ export default function SolutionInputPage() {
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 sm:w-auto"
+                disabled={submitting}
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-7 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               >
-                生成解决方案
-                <span aria-hidden>→</span>
+                {submitting ? "生成中…" : "生成解决方案"}
+                {!submitting && <span aria-hidden>→</span>}
               </button>
             </div>
           </div>

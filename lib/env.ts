@@ -19,6 +19,7 @@ export const env = {
   embeddingBaseUrl: read("EMBEDDING_BASE_URL") || "https://api.openai.com/v1",
   embeddingModel: read("EMBEDDING_MODEL") || "text-embedding-3-small",
   embeddingApiKey: read("EMBEDDING_API_KEY"),
+  embeddingDimensions: Number(read("EMBEDDING_DIMENSIONS") || "1536"),
 };
 
 /** 是否已配置 Supabase（决定数据是否真实持久化） */

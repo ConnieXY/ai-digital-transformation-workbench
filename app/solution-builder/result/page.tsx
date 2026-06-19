@@ -3,30 +3,89 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import PageShell from "@/components/PageShell";
+import GroundedSolutionView from "@/components/solution/GroundedSolutionView";
 import {
   type SolutionInput,
   SOLUTION_INPUT_KEY,
 } from "@/data/solution";
+import type { GroundedSolution, SolutionSource } from "@/lib/schemas/solution";
 import { generateSolution } from "@/lib/solutionGenerator";
+
+interface GroundedPayload {
+  input: SolutionInput;
+  grounded: GroundedSolution;
+  sources: SolutionSource[];
+}
 
 export default function SolutionResultPage() {
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [input, setInput] = useState<SolutionInput | null>(null);
+  const [groundedPayload, setGroundedPayload] =
+    useState<GroundedPayload | null>(null);
 
   useEffect(() => {
     setMounted(true);
-    try {
-      const raw = localStorage.getItem(SOLUTION_INPUT_KEY);
-      if (raw) setInput(JSON.parse(raw) as SolutionInput);
-    } catch {
-      setInput(null);
+
+    const loadLocal = () => {
+      try {
+        const raw = localStorage.getItem(SOLUTION_INPUT_KEY);
+        if (raw) setInput(JSON.parse(raw) as SolutionInput);
+      } catch {
+        setInput(null);
+      }
+    };
+
+    const id = new URLSearchParams(window.location.search).get("id");
+    if (!id) {
+      loadLocal();
+      return;
     }
+    setLoading(true);
+    fetch(`/api/solutions/${id}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("not found"))))
+      .then((d) => {
+        if (d?.grounded?.recommendations) {
+          setGroundedPayload({
+            input: d.input,
+            grounded: d.grounded,
+            sources: d.sources ?? [],
+          });
+        } else {
+          loadLocal();
+        }
+      })
+      .catch(loadLocal)
+      .finally(() => setLoading(false));
   }, []);
 
   if (!mounted) {
     return (
       <PageShell>
         <div className="container-page py-24" />
+      </PageShell>
+    );
+  }
+
+  if (loading) {
+    return (
+      <PageShell>
+        <section className="container-page py-24 text-center">
+          <p className="text-sm text-ink-500">正在基于知识库生成方案…</p>
+        </section>
+      </PageShell>
+    );
+  }
+
+  // RAG grounded 结果（真实 LLM + 引用）
+  if (groundedPayload) {
+    return (
+      <PageShell>
+        <GroundedSolutionView
+          input={groundedPayload.input}
+          grounded={groundedPayload.grounded}
+          sources={groundedPayload.sources}
+        />
       </PageShell>
     );
   }
