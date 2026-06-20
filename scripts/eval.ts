@@ -14,13 +14,14 @@ import type { Check, CaseResult, EvalReport } from "../lib/eval/types";
 import {
   checkSchema,
   checkCitations,
+  checkCoverage,
   checkKeywords,
   checkRecall,
 } from "../lib/eval/evaluators";
 import { judgeFaithfulness } from "../lib/eval/judge";
 
 const BASE = process.env.EVAL_BASE_URL?.trim() || "http://localhost:3000";
-const FAITHFULNESS_THRESHOLD = 0.6;
+const FAITHFULNESS_THRESHOLD = 0.8;
 
 async function post(p: string, body?: unknown) {
   const r = await fetch(`${BASE}${p}`, {
@@ -48,8 +49,9 @@ async function faithfulness(
   sources: SolutionSource[],
 ): Promise<Check> {
   const judged = claims.filter((c) => c.cites.length > 0);
+  // 完全没有引用 = 诚实弃权（是否 grounding 足够由 coverage 单独考核）
   if (judged.length === 0)
-    return { name: "faithfulness", passed: false, score: 0, detail: "无可评判引用" };
+    return { name: "faithfulness", passed: true, score: 1, detail: "无引用（诚实弃权）" };
   let supported = 0;
   const fails: string[] = [];
   for (const c of judged) {
@@ -106,6 +108,14 @@ async function runCase(c: (typeof cases)[number]): Promise<CaseResult> {
           sources,
         ),
       );
+      if (c.expectGroundingCoverage != null) {
+        checks.push(
+          checkCoverage(
+            recs.map((r: { citations: number[] }) => r.citations),
+            c.expectGroundingCoverage,
+          ),
+        );
+      }
     } else if (c.type === "incident") {
       const created = await post("/api/incidents", {
         sessionId: `eval-${c.id}`,
@@ -141,6 +151,14 @@ async function runCase(c: (typeof cases)[number]): Promise<CaseResult> {
           sources,
         ),
       );
+      if (c.expectGroundingCoverage != null) {
+        checks.push(
+          checkCoverage(
+            causes.map((x: { citations: number[] }) => x.citations),
+            c.expectGroundingCoverage,
+          ),
+        );
+      }
     } else if (c.type === "retrieval") {
       const res = await post("/api/rag/search", { query: c.query, k: 5 });
       const titles = (res.json.chunks ?? []).map((x: { title: string }) => x.title);

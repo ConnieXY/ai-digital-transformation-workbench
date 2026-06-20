@@ -3,6 +3,21 @@ import OpenAI from "openai";
 import { env, hasLLM } from "@/lib/env";
 import type { ChatMessage, ChatResult, LLMProvider } from "./types";
 
+/** 指数退避重试，应对 LLM 服务的瞬时限流/抖动。 */
+async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      if (i < attempts - 1)
+        await new Promise((r) => setTimeout(r, 600 * 2 ** i));
+    }
+  }
+  throw lastErr;
+}
+
 /**
  * OpenAI 兼容 provider —— 通过 baseURL 适配 OpenAI / DeepSeek / 通义千问 / Kimi 等，
  * 切换平台只需改环境变量，不改业务代码。
@@ -22,12 +37,14 @@ class OpenAICompatibleProvider implements LLMProvider {
   }
 
   async chatJSON(messages: ChatMessage[]): Promise<ChatResult> {
-    const res = await this.client.chat.completions.create({
-      model: this.model,
-      messages,
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-    });
+    const res = await withRetry(() =>
+      this.client.chat.completions.create({
+        model: this.model,
+        messages,
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+      }),
+    );
     return {
       content: res.choices[0]?.message?.content ?? "",
       model: res.model || this.model,

@@ -11,17 +11,16 @@ export function checkSchema(schema: z.ZodType, data: unknown): Check {
   };
 }
 
-/** 引用合法性：每条都有引用，且序号都在 [1..sourceCount]。 */
+/**
+ * 引用合法性：所有引用序号都在 [1..sourceCount]。
+ * 允许某条无引用（abstain）——是否有足够 grounding 由 coverage 单独考核。
+ */
 export function checkCitations(
   citationLists: number[][],
   sourceCount: number,
 ): Check {
-  if (citationLists.length === 0) {
-    return { name: "citations_valid", passed: false, detail: "无可检查的引用" };
-  }
   const bad: string[] = [];
   citationLists.forEach((cites, i) => {
-    if (!cites || cites.length === 0) bad.push(`#${i + 1} 无引用`);
     for (const n of cites ?? [])
       if (n < 1 || n > sourceCount) bad.push(`#${i + 1} 越界[${n}]`);
   });
@@ -29,6 +28,22 @@ export function checkCitations(
     name: "citations_valid",
     passed: bad.length === 0,
     detail: bad.join("; ") || undefined,
+  };
+}
+
+/** grounding 覆盖率：有引用的条目占比 ≥ minRatio（防止靠"全部弃权"骗过忠实度）。 */
+export function checkCoverage(
+  citationLists: number[][],
+  minRatio: number,
+): Check {
+  const total = citationLists.length;
+  const grounded = citationLists.filter((c) => c && c.length > 0).length;
+  const ratio = total ? grounded / total : 0;
+  return {
+    name: "grounding_coverage",
+    passed: ratio >= minRatio,
+    score: Number(ratio.toFixed(2)),
+    detail: `有依据 ${grounded}/${total}（要求 ≥${minRatio}）`,
   };
 }
 

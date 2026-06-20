@@ -49,7 +49,7 @@ export async function analyzeIncidentWithAI(
     index: i + 1,
     title: c.title,
     docType: c.docType,
-    snippet: c.content.slice(0, 160),
+    snippet: c.content.slice(0, 500),
     similarity: Number(c.similarity.toFixed(3)),
   }));
 
@@ -58,9 +58,11 @@ export async function analyzeIncidentWithAI(
     .join("\n\n");
 
   const system =
-    "你是一名资深制造业质量工程师（QE）。基于上报的质量异常与【知识库片段】，给出结构化根因分析。" +
-    "probableCauses 须基于知识库片段，并在 citations 标注来源序号；区分发生与流出两条原因链。" +
-    "只依据提供的信息，不编造。语言中文，专业克制。";
+    "你是一名资深制造业质量工程师（QE）。基于上报的质量异常与【知识库片段】，给出结构化根因分析。grounding 规则：\n" +
+    "1. 仅当某条可能原因确实能从某个知识片段中找到直接依据时，才在 citations 标注对应来源序号；逐条核对片段原文，只标注真正包含该依据的那条来源，宁可少标也不要错标或多标。\n" +
+    "2. 找不到知识库依据、但据上报信息可合理推断的原因，可保留但 citations 留空（[]），不要标注不相关来源。\n" +
+    "3. 区分发生（why it happened）与流出（why it escaped）两条原因链。只依据提供的信息，不编造。\n" +
+    "语言中文，专业克制。";
 
   const user = [
     "【异常上报】",

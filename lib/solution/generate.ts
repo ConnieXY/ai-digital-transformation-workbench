@@ -41,7 +41,7 @@ export async function generateGroundedSolution(
     index: i + 1,
     title: c.title,
     docType: c.docType,
-    snippet: c.content.slice(0, 160),
+    snippet: c.content.slice(0, 500),
     similarity: Number(c.similarity.toFixed(3)),
   }));
 
@@ -51,9 +51,10 @@ export async function generateGroundedSolution(
     .join("\n\n");
 
   const system =
-    "你是一名资深企业数智化转型解决方案顾问。" +
-    "必须严格基于【知识库片段】生成方案，不得编造片段之外的事实；" +
-    "每条建议都要在 citations 里标注其依据的来源序号（来自知识库片段编号）。" +
+    "你是一名资深企业数智化转型解决方案顾问。生成方案时严格遵守 grounding 规则：\n" +
+    "1. 仅当某条建议确实能从某个【知识库片段】中找到直接依据时，才在 citations 标注对应来源序号；逐条核对片段原文，只标注真正包含该依据的那条来源，宁可少标也不要错标或多标。\n" +
+    "2. 找不到依据的内容：要么不写，要么写成措辞谨慎的通用建议，并把 citations 留空（[]）。绝不为了凑引用而标注不相关来源。\n" +
+    "3. 若【知识库片段】整体与该客户场景关联很弱，请在 summary 中如实说明「知识库缺乏针对性依据」，宁可少写也不要输出看似有据实则无据的结论。\n" +
     "语言中文，面向 B2B 决策者，克制专业。";
 
   const user = [

@@ -78,7 +78,12 @@ export async function retrieve(
 
   if (error || !data) return [];
 
-  return (data as Array<Record<string, unknown>>).map((r) => ({
+  // 相关性门控：丢弃相似度过低的片段，避免弱语料时 LLM 强行"凑引用"。
+  const minSim = Number(process.env.RAG_MIN_SIMILARITY ?? "0.48");
+
+  return (data as Array<Record<string, unknown>>)
+    .filter((r) => (r.similarity as number) >= minSim)
+    .map((r) => ({
     id: r.id as string,
     documentId: r.document_id as string,
     content: r.content as string,

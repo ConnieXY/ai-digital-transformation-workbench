@@ -24,6 +24,8 @@ export type EvalCase =
         additionalContext: string;
       };
       expectKeywords: string[];
+      /** 强语料场景要求的最低 grounding 覆盖率；弱语料省略（允许诚实弃权） */
+      expectGroundingCoverage?: number;
     }
   | {
       id: string;
@@ -31,6 +33,7 @@ export type EvalCase =
       incident: Record<string, string>;
       expectTopCauseKeywords: string[];
       expectKeywords: string[];
+      expectGroundingCoverage?: number;
     }
   | {
       id: string;
@@ -73,6 +76,7 @@ export const cases: EvalCase[] = [
       additionalContext: "产线质量异常频发",
     },
     expectKeywords: ["质量", "数据"],
+    expectGroundingCoverage: 0.5,
   },
   {
     id: "solution-retail-weak-corpus",
@@ -106,6 +110,7 @@ export const cases: EvalCase[] = [
     },
     expectTopCauseKeywords: ["来料", "供应商", "材料"],
     expectKeywords: ["隔离", "检验"],
+    expectGroundingCoverage: 0.5,
   },
   {
     id: "retrieval-scratch-case",

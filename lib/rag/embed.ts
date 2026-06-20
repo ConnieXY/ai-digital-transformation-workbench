@@ -18,6 +18,21 @@ export function hasEmbedding(): boolean {
   return Boolean(process.env.EMBEDDING_API_KEY?.trim());
 }
 
+/** 指数退避重试，应对 embedding 服务的瞬时限流/抖动。 */
+async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      if (i < attempts - 1)
+        await new Promise((r) => setTimeout(r, 500 * 2 ** i));
+    }
+  }
+  throw lastErr;
+}
+
 export interface EmbedResult {
   vectors: number[][];
   model: string;
@@ -36,12 +51,14 @@ export async function embedTexts(texts: string[]): Promise<EmbedResult> {
 
   for (let i = 0; i < texts.length; i += 10) {
     const batch = texts.slice(i, i + 10);
-    const res = await client.embeddings.create({
-      model: c.model,
-      input: batch,
-      dimensions: c.dimensions,
-      encoding_format: "float",
-    });
+    const res = await withRetry(() =>
+      client.embeddings.create({
+        model: c.model,
+        input: batch,
+        dimensions: c.dimensions,
+        encoding_format: "float",
+      }),
+    );
     for (const item of res.data) vectors.push(item.embedding as number[]);
     tokens += res.usage?.total_tokens ?? 0;
     model = res.model || c.model;

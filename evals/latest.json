@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-06-19T23:07:33.902Z",
+  "startedAt": "2026-06-20T04:47:02.081Z",
   "baseUrl": "http://localhost:3000",
   "cases": [
     {
@@ -39,12 +39,18 @@
         },
         {
           "name": "faithfulness",
-          "passed": false,
-          "score": 0.5,
-          "detail": "2/4 被证据支撑；存疑：AI赋能质量异常闭环：在看板基础上叠加A、防错与设备预防性维护：实施防错设计（如扫"
+          "passed": true,
+          "score": 1,
+          "detail": "4/4 被证据支撑"
+        },
+        {
+          "name": "grounding_coverage",
+          "passed": true,
+          "score": 1,
+          "detail": "有依据 4/4（要求 ≥0.5）"
         }
       ],
-      "passed": false
+      "passed": true
     },
     {
       "id": "solution-retail-weak-corpus",
@@ -66,12 +72,12 @@
         },
         {
           "name": "faithfulness",
-          "passed": false,
-          "score": 0,
-          "detail": "0/2 被证据支撑；存疑：库存周转优化：整合POS销售数据与CRM、会员复购提升：基于CRM会员数据，构建R"
+          "passed": true,
+          "score": 1,
+          "detail": "无引用（诚实弃权）"
         }
       ],
-      "passed": false
+      "passed": true
     },
     {
       "id": "incident-scratch-supplier",
@@ -88,7 +94,7 @@
         {
           "name": "top_cause_relevant",
           "passed": true,
-          "detail": "首要原因：新供应商外壳材料表面硬度下降，导致搬运或组装过程中易产生划痕"
+          "detail": "首要原因：新供应商来料表面硬度下降，导致搬运或组装过程中易产生划痕"
         },
         {
           "name": "keywords",
@@ -98,12 +104,18 @@
         },
         {
           "name": "faithfulness",
-          "passed": false,
-          "score": 0.5,
-          "detail": "2/4 被证据支撑；存疑：组装工序外观检验未能有效拦截，可能因限度、供应商换料未触发加严来料检验和留样比对流"
+          "passed": true,
+          "score": 1,
+          "detail": "3/3 被证据支撑"
+        },
+        {
+          "name": "grounding_coverage",
+          "passed": true,
+          "score": 1,
+          "detail": "有依据 3/3（要求 ≥0.5）"
         }
       ],
-      "passed": false
+      "passed": true
     },
     {
       "id": "retrieval-scratch-case",
@@ -132,9 +144,9 @@
   ],
   "summary": {
     "totalCases": 6,
-    "passedCases": 3,
-    "totalChecks": 17,
-    "passedChecks": 14,
+    "passedCases": 6,
+    "totalChecks": 19,
+    "passedChecks": 19,
     "byMetric": {
       "schema_valid": {
         "passed": 4,
@@ -149,8 +161,12 @@
         "total": 3
       },
       "faithfulness": {
-        "passed": 0,
+        "passed": 3,
         "total": 3
+      },
+      "grounding_coverage": {
+        "passed": 2,
+        "total": 2
       },
       "top_cause_relevant": {
         "passed": 1,

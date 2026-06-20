@@ -9,16 +9,22 @@ export async function judgeFaithfulness(
   claim: string,
   evidence: string,
 ): Promise<{ supported: boolean; reason: string }> {
-  const apiKey = process.env.LLM_API_KEY?.trim();
-  if (!apiKey) return { supported: false, reason: "no LLM key" };
+  // 跨模型评判：默认用 JUDGE_*（建议配不同于生成器的模型，如 Qwen），
+  // 缺省回退到 embedding(百炼) 凭据 + qwen-plus，避免"同模型自评"的偏差。
+  const apiKey =
+    process.env.JUDGE_API_KEY?.trim() || process.env.EMBEDDING_API_KEY?.trim();
+  if (!apiKey) return { supported: false, reason: "no judge key" };
 
   const client = new OpenAI({
     apiKey,
-    baseURL: process.env.LLM_BASE_URL?.trim() || "https://api.openai.com/v1",
+    baseURL:
+      process.env.JUDGE_BASE_URL?.trim() ||
+      process.env.EMBEDDING_BASE_URL?.trim() ||
+      "https://api.openai.com/v1",
   });
 
   const res = await client.chat.completions.create({
-    model: process.env.LLM_MODEL?.trim() || "gpt-4o-mini",
+    model: process.env.JUDGE_MODEL?.trim() || "qwen-plus",
     temperature: 0,
     response_format: { type: "json_object" },
     messages: [
