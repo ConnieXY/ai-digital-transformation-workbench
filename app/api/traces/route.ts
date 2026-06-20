@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { featuredTraces } from "@/data/featured";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -7,7 +8,8 @@ export const dynamic = "force-dynamic";
 /** Trace 列表 + 聚合指标（Trace Viewer 数据源）。 */
 export async function GET(req: Request) {
   const supabase = getSupabaseAdmin();
-  if (!supabase) return NextResponse.json({ error: "db not configured" }, { status: 503 });
+  // 公网无 DB → 展示固化的真实 trace 快照
+  if (!supabase) return NextResponse.json(featuredTraces);
 
   const url = new URL(req.url);
   const limit = Math.min(Number(url.searchParams.get("limit") ?? "100"), 500);

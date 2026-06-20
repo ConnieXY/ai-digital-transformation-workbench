@@ -2,12 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import PageShell from "@/components/PageShell";
 import DimensionCard from "@/components/diagnosis/DimensionCard";
-import SampleDataButton from "@/components/SampleDataButton";
-import {
-  DIAGNOSIS_STORAGE_KEY,
-  dimensions,
-  sampleDiagnosisSubmission,
-} from "@/data/diagnosis";
+import { dimensions } from "@/data/diagnosis";
+import { FEATURED } from "@/data/featured";
 
 export const metadata: Metadata = {
   title: "企业 AI 数智化转型诊断助手 | 企业 AI 数智化转型工作台",
@@ -84,17 +80,12 @@ export default function DiagnosisPage() {
               开始诊断
               <span aria-hidden className="transition-transform">→</span>
             </Link>
-            <SampleDataButton
-              entries={[
-                {
-                  key: DIAGNOSIS_STORAGE_KEY,
-                  value: sampleDiagnosisSubmission,
-                },
-              ]}
-              href="/diagnosis/report"
-              label="查看示例报告"
+            <Link
+              href={`/diagnosis/report?id=${FEATURED.diagnosisId}`}
               className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-7 py-3 text-sm font-semibold text-ink-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
-            />
+            >
+              查看真实 AI 示例
+            </Link>
           </div>
         </div>
       </section>

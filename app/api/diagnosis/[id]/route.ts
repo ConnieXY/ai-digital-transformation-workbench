@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { type Answers } from "@/data/diagnosis";
 import { scoreDiagnosis } from "@/lib/scoring";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { FEATURED, featuredDiagnosis } from "@/data/featured";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,6 +11,11 @@ export async function GET(
   _req: Request,
   { params }: { params: { id: string } },
 ) {
+  // 真实 AI 示例（固化快照）：无需 DB / LLM，公网即可展示真实产物
+  if (params.id === FEATURED.diagnosisId) {
+    return NextResponse.json(featuredDiagnosis);
+  }
+
   const supabase = getSupabaseAdmin();
   if (!supabase) {
     return NextResponse.json({ error: "db not configured" }, { status: 503 });

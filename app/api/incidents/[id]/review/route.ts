@@ -4,6 +4,7 @@ import { hasLLM } from "@/lib/env";
 import { generateReviewReport } from "@/lib/incident/review";
 import { transition } from "@/lib/workflow/incident";
 import type { IncidentAnalysis } from "@/lib/schemas/incident";
+import { FEATURED, featuredIncidentReview } from "@/data/featured";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,6 +14,10 @@ export async function GET(
   _req: Request,
   { params }: { params: { id: string } },
 ) {
+  if (params.id === FEATURED.incidentId) {
+    return NextResponse.json(featuredIncidentReview);
+  }
+
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "db not configured" }, { status: 503 });
 

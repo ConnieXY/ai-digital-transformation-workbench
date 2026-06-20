@@ -2,12 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import PageShell from "@/components/PageShell";
 import FlowStepCard from "@/components/manufacturing/FlowStepCard";
-import SampleDataButton from "@/components/SampleDataButton";
-import {
-  INCIDENT_STORAGE_KEY,
-  flowSteps,
-  sampleIncident,
-} from "@/data/manufacturing";
+import { flowSteps } from "@/data/manufacturing";
+import { FEATURED } from "@/data/featured";
 
 export const metadata: Metadata = {
   title: "制造业质量异常闭环助手 | 企业 AI 数智化转型工作台",
@@ -87,12 +83,12 @@ export default function ManufacturingDemoPage() {
               体验异常上报
               <span aria-hidden className="transition-transform">→</span>
             </Link>
-            <SampleDataButton
-              entries={[{ key: INCIDENT_STORAGE_KEY, value: sampleIncident }]}
-              href="/manufacturing-demo/analysis"
-              label="查看示例分析"
+            <Link
+              href={`/manufacturing-demo/analysis?id=${FEATURED.incidentId}`}
               className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-7 py-3 text-sm font-semibold text-ink-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
-            />
+            >
+              查看真实 AI 示例
+            </Link>
           </div>
         </div>
       </section>

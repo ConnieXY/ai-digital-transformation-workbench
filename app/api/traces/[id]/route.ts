@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { featuredTraceById } from "@/data/featured";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,6 +10,9 @@ export async function GET(
   _req: Request,
   { params }: { params: { id: string } },
 ) {
+  const featured = featuredTraceById(params.id);
+  if (featured) return NextResponse.json(featured);
+
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "db not configured" }, { status: 503 });
 

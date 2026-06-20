@@ -3,12 +3,8 @@ import Link from "next/link";
 import PageShell from "@/components/PageShell";
 import CapabilityCard from "@/components/solution/CapabilityCard";
 import DiagnosisDetectedBanner from "@/components/solution/DiagnosisDetectedBanner";
-import SampleDataButton from "@/components/SampleDataButton";
-import {
-  SOLUTION_INPUT_KEY,
-  capabilities,
-  sampleSolutionInput,
-} from "@/data/solution";
+import { capabilities } from "@/data/solution";
+import { FEATURED } from "@/data/featured";
 
 export const metadata: Metadata = {
   title: "行业解决方案生成 | 企业 AI 数智化转型工作台",
@@ -89,14 +85,12 @@ export default function SolutionBuilderPage() {
               开始生成方案
               <span aria-hidden className="transition-transform">→</span>
             </Link>
-            <SampleDataButton
-              entries={[
-                { key: SOLUTION_INPUT_KEY, value: sampleSolutionInput },
-              ]}
-              href="/solution-builder/result"
-              label="查看示例方案"
+            <Link
+              href={`/solution-builder/result?id=${FEATURED.solutionId}`}
               className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-7 py-3 text-sm font-semibold text-ink-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
-            />
+            >
+              查看真实 AI 示例
+            </Link>
           </div>
         </div>
       </section>
