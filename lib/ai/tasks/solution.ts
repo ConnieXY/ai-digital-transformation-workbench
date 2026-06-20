@@ -3,34 +3,12 @@ import {
   type GroundedSolution,
   GroundedSolutionSchema,
 } from "@/lib/schemas/solution";
-import { generateSolution } from "@/lib/solutionGenerator";
+import { solutionFallback } from "@/lib/solution/fallback";
 import {
   type AITask,
   buildKnowledgeBlock,
   filterCitations,
 } from "@/lib/ai/task";
-
-/** 规则降级：把规则方案适配成与 LLM 同 schema 的 grounded 结构（citations 留空）。 */
-function ruleFallback(input: SolutionInput): GroundedSolution {
-  const r = generateSolution(input);
-  const emphasized =
-    r.roleValues.find((v) => v.emphasized) ?? r.roleValues[0];
-  return {
-    summary: `${r.priorityScenario.summary}（规则生成，未接 LLM，故无知识库引用）`,
-    recommendations: r.solutions.slice(0, 5).map((s) => ({
-      scenario: s.scenario,
-      solution: s.solution,
-      tools: s.tools,
-      expectedValue: s.value,
-      citations: [],
-    })),
-    roleValue: {
-      role: input.targetRole || emphasized?.title || "决策者",
-      value: emphasized?.value ?? "",
-    },
-    risks: r.priorityScenario.reasons.slice(0, 3),
-  };
-}
 
 /** 行业方案任务：RAG 检索 → LLM grounded 生成（强制引用）；无 LLM 时规则降级。 */
 export const solutionTask: AITask<SolutionInput, GroundedSolution> = {
@@ -78,5 +56,5 @@ export const solutionTask: AITask<SolutionInput, GroundedSolution> = {
       citations: filterCitations(r.citations, sources),
     })),
   }),
-  fallback: ruleFallback,
+  fallback: solutionFallback,
 };
