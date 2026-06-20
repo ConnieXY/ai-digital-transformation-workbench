@@ -153,6 +153,33 @@ export default function AboutPage() {
                 </span>
               ))}
             </div>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <a
+                href="https://github.com/ConnieXY/ai-digital-transformation-workbench"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-ink-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-ink-700"
+              >
+                源码 GitHub
+                <span aria-hidden>↗</span>
+              </a>
+              <a
+                href="https://github.com/ConnieXY/ai-digital-transformation-workbench/blob/main/docs/ARCHITECTURE.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-ink-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
+              >
+                架构与决策（ADR）
+                <span aria-hidden>↗</span>
+              </a>
+              <Link
+                href="/traces"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-ink-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
+              >
+                Trace Viewer
+                <span aria-hidden>→</span>
+              </Link>
+            </div>
           </div>
         </section>
 
