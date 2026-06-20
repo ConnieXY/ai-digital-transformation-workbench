@@ -4,7 +4,8 @@ import { type Answers, type CompanyInfo } from "@/data/diagnosis";
 import { scoreDiagnosis } from "@/lib/scoring";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { hasLLM } from "@/lib/env";
-import { generateDiagnosisInsight } from "@/lib/diagnosis/insight";
+import { runAITask } from "@/lib/ai/task";
+import { diagnosisInsightTask } from "@/lib/ai/tasks/diagnosisInsight";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -90,12 +91,11 @@ export async function POST(req: Request) {
   let source: "llm" | "rule" = "rule";
   if (hasLLM) {
     try {
-      const insight = await generateDiagnosisInsight({
-        companyInfo: companyInfo as CompanyInfo,
-        result,
-        sessionId,
-        entityId: assessment.id,
-      });
+      const { output: insight } = await runAITask(
+        diagnosisInsightTask,
+        { companyInfo: companyInfo as CompanyInfo, result },
+        { sessionId, entityId: assessment.id },
+      );
       await supabase
         .from("assessments")
         .update({ llm_insight: insight, source: "llm" })

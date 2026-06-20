@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
-import { hasLLM } from "@/lib/env";
-import { generateGroundedSolution } from "@/lib/solution/generate";
+import { runAITask } from "@/lib/ai/task";
+import { solutionTask } from "@/lib/ai/tasks/solution";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,12 +28,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "invalid body", detail: String(e) }, { status: 400 });
   }
   const { sessionId, input } = body;
-
-  if (!hasLLM) {
-    // 未配置 LLM：让前端走规则降级
-    return NextResponse.json({ persisted: false, source: "rule" });
-  }
-
   const supabase = getSupabaseAdmin();
 
   // 先建记录拿 id（便于 trace 关联）；无 DB 时用占位
@@ -53,28 +47,25 @@ export async function POST(req: Request) {
     id = data.id;
   }
 
-  try {
-    const { grounded, sources } = await generateGroundedSolution(input, {
-      sessionId,
-      entityId: id,
-    });
+  // 统一管线：检索 → LLM grounded（强制引用）→ 后处理；无 LLM 时确定性降级
+  const { output: grounded, sources, source } = await runAITask(
+    solutionTask,
+    input,
+    { sessionId, entityId: id },
+  );
 
-    if (supabase && id) {
-      await supabase
-        .from("solutions")
-        .update({ result: grounded, citations: sources, source: "llm" })
-        .eq("id", id);
-    }
-
-    return NextResponse.json({
-      persisted: Boolean(id),
-      id,
-      source: "llm",
-      grounded,
-      sources,
-    });
-  } catch (e) {
-    console.error("[solutions] generate failed:", e);
-    return NextResponse.json({ persisted: false, source: "rule" });
+  if (supabase && id) {
+    await supabase
+      .from("solutions")
+      .update({ result: grounded, citations: sources, source })
+      .eq("id", id);
   }
+
+  return NextResponse.json({
+    persisted: Boolean(id),
+    id,
+    source,
+    grounded,
+    sources,
+  });
 }

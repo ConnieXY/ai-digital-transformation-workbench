@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
-import { hasLLM } from "@/lib/env";
-import { generateReviewReport } from "@/lib/incident/review";
+import { runAITask } from "@/lib/ai/task";
+import { incidentReviewTask } from "@/lib/ai/tasks/incidentReview";
 import { transition } from "@/lib/workflow/incident";
 import type { IncidentAnalysis } from "@/lib/schemas/incident";
 import { FEATURED, featuredIncidentReview } from "@/data/featured";
@@ -50,7 +50,6 @@ export async function POST(
 ) {
   const supabase = getSupabaseAdmin();
   if (!supabase) return NextResponse.json({ error: "db not configured" }, { status: 503 });
-  if (!hasLLM) return NextResponse.json({ error: "llm not configured" }, { status: 503 });
 
   const { data: incident, error } = await supabase
     .from("incidents")
@@ -75,24 +74,27 @@ export async function POST(
   ]);
 
   try {
-    const report = await generateReviewReport(
-      incident,
-      (analysisRow?.analysis as IncidentAnalysis) ?? null,
-      tasks ?? [],
+    const { output: report, source } = await runAITask(
+      incidentReviewTask,
+      {
+        incident,
+        analysis: (analysisRow?.analysis as IncidentAnalysis) ?? null,
+        tasks: tasks ?? [],
+      },
       { sessionId: incident.session_id, entityId: incident.id },
     );
 
     await supabase.from("review_reports").insert({
       incident_id: incident.id,
       report,
-      source: "llm",
+      source,
     });
     await transition(supabase, incident.id, "reviewed", {
       actor: "ai",
       note: "生成复盘报告",
     });
 
-    return NextResponse.json({ report, source: "llm" });
+    return NextResponse.json({ report, source });
   } catch (e) {
     console.error("[review] failed:", e);
     return NextResponse.json({ error: "review failed", detail: String(e) }, { status: 500 });
