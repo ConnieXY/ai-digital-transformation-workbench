@@ -64,7 +64,7 @@ flowchart TD
 | **Design** 行业方案 | 行业/客户/痛点 | RAG 检索 → LLM grounded 生成（强制引用） → trace | 方案概述 + 推荐（带来源）+ 角色价值 |
 | **Deliver** 制造业闭环 | 质量异常上报 | RAG grounded 根因 → 任务 → 看板(HITL) → 复盘；状态机全程 trace | 根因(带引用) + 闭环任务 + 复盘报告 |
 
-> 共性：`输入 → 检索 → 结构化生成 → 校验 → 落库 → trace`。当前三处实现略有差异（见 [ADR-0008](adr/0008-known-gaps.md) 的"统一 AITask 抽象"待办）。
+> 共性 `输入 → 检索 → 结构化生成 → 校验 → 后处理 → 降级 → trace` 已收敛到统一的 **`runAITask`** 运行器（`lib/ai/task.ts`），四个模块只是它的声明式任务配置（`lib/ai/tasks/*`）。见 [ADR-0009](ADR.md#adr-0009--统一-aitask-抽象合并规则llm-双路径)。
 
 ## 5. 关键工程机制
 

@@ -55,8 +55,15 @@
 | 缺口 | 现状 | 改进方向 |
 |---|---|---|
 | 鉴权/数据隔离 | 匿名 session，GET 按 id 可读（IDOR） | Supabase Auth + 基于 `auth.uid()` 的 RLS |
-| 模块抽象 | 诊断/方案/异常三处管线略有重复 | 抽象统一 `AITask`（输入→检索→生成→校验→落库→trace） |
 | Trace 形态 | 平表，retrieve 与 generate 无父子关联 | span 树 + correlation id（OTel 风格） |
 | 测试 | 仅 tsc + eval | 单测（评分纯函数）+ API 集成测试 + eval 进 CI |
 | 公网实时性 | 真实产物为固化快照 | 带限流/鉴权的"在线真跑"环境 |
 | 流式 | 同步等待 5–9s | 流式输出 / 后台任务 |
+
+> ~~模块抽象重复~~ 已在 [ADR-0009](#adr-0009--统一-aitask-抽象合并规则llm-双路径) 完成。
+
+## ADR-0009 · 统一 AITask 抽象（合并规则/LLM 双路径）
+
+- **Context**：诊断/方案/根因/复盘四处生成器各自重复"检索→组装提示→结构化生成→过滤引用→trace"，且"用 LLM 还是规则降级"的分支散落在各路由（有的甚至无 LLM 直接 503），形成两套真值/控制流。
+- **Decision**：抽象 `runAITask(task, input, ctx)` 运行器（`lib/ai/task.ts`）：把"RAG 检索 → 提示组装 → 结构化生成 → 后处理 → 确定性降级 → 统一 source/trace"收敛为一条管线；四个模块退化为声明式任务配置（`lib/ai/tasks/*`，各含同 schema 的规则降级）。路由只调 `runAITask`。
+- **Consequences**：✅ 消除重复，新增 AI 任务只写配置；✅ 降级逻辑集中一处，无 LLM 时优雅回落（不再 503）；✅ 重构后 **eval 6/6 用例 19/19 检查全绿 → 行为保持零回归**。⚠️ 客户端结果页的"规则视图 vs grounded 视图"渲染合一仍可进一步收敛（现已具备同 schema 基础）。
