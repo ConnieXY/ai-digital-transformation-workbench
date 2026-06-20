@@ -70,4 +70,4 @@ npm run eval                   # 离线评测（需 dev server 在跑）
 
 ## 作者
 
-By **Connie Wang（Connie Wang）** —— 客户成功 / 商业化 / To B 产品。本项目由本人用 [Claude Code](https://claude.com/claude-code) 从 0 到 1 设计与实现。在线资料 <https://>。
+By **Connie Wang** —— 客户成功 / 商业化 / To B 产品。本项目由本人用 [Claude Code](https://claude.com/claude-code) 从 0 到 1 设计与实现。
