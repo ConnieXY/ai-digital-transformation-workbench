@@ -66,7 +66,7 @@ npm run eval                   # 离线评测（需 dev server 在跑）
 
 ## 状态与边界（诚实声明）
 
-**演示 / 预览版**。已知取舍与路线图见 [ADR-0008](docs/ADR.md#adr-0008--已知缺口与路线图诚实边界)：暂无鉴权（匿名 session）、公网为只读真实快照、trace 为平表、尚无自动化测试。下一步：Auth + RLS、统一 AITask 抽象、trace 升级 span 树、测试进 CI。
+**演示 / 预览版**。已知取舍与路线图见 [ADR-0008](docs/ADR.md#adr-0008--已知缺口与路线图诚实边界)：公网为只读真实快照、trace 为平表、尚无自动化测试。数据隔离已用匿名登录 + Postgres RLS 修复 IDOR（[ADR-0010](docs/ADR.md#adr-0010--匿名登录--rls-数据隔离修复-idor)），但匿名身份绑定浏览器、尚无真正账号体系。下一步：trace 升级 span 树、测试进 CI、真正的登录（邮箱/OAuth）。
 
 ## 作者
 

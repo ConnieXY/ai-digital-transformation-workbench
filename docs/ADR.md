@@ -40,13 +40,13 @@
 
 - **Context**：作为演示项目，公网要展示**真实** AI 能力；但开放的付费 LLM 端点有刷量/注入/成本风险。
 - **Decision**：① 无登录，用浏览器生成的匿名 `session_id` 归属数据；② 未配 LLM/DB key 时回落规则路径；③ **公网不配 LLM key**，改用固化的真实 AI 产物快照（`data/featured/*`）——GET 路由 featured-first，命中固化 id 直接返回，**零成本、确定性、防滥用**地展示真实 grounded 产物 + Trace Viewer。
-- **Consequences**：✅ 公网零配置即可交互式浏览真实产物；✅ 成本/滥用风险为零。⚠️ 公网示例是只读快照而非实时生成（实时路径留本地/带 key 环境）；匿名 session 无真正鉴权（IDOR，见 ADR-0008）。
+- **Consequences**：✅ 公网零配置即可交互式浏览真实产物；✅ 成本/滥用风险为零。⚠️ 公网示例是只读快照而非实时生成（实时路径留本地/带 key 环境）。匿名 session 的 IDOR 已在 [ADR-0010](#adr-0010--匿名登录--rls-数据隔离修复-idor) 用匿名登录 + RLS 修复。
 
 ## ADR-0007 · Supabase + pgvector；HNSW 而非 ivfflat
 
 - **Context**：需要关系数据 + 向量检索；小语料（十余文档）。
 - **Decision**：Supabase Postgres + pgvector，检索走 `match_document_chunks` RPC。初版 ivfflat(lists=100) 在小数据上 `probes=1` 只召回极少候选 → 改 **HNSW**。
-- **Consequences**：✅ 检索 recall@k 满分，案例库命中位次第一（cos 0.82）；✅ 一套库同时承载业务数据 + 向量。⚠️ service_role 在服务端使用，RLS 已开但未配面向用户的策略（见 ADR-0008）。
+- **Consequences**：✅ 检索 recall@k 满分，案例库命中位次第一（cos 0.82）；✅ 一套库同时承载业务数据 + 向量。⚠️ service_role 仅服务端使用；面向用户的 RLS 策略已在 [ADR-0010](#adr-0010--匿名登录--rls-数据隔离修复-idor) 落地。
 
 ## ADR-0008 · 已知缺口与路线图（诚实边界）
 
@@ -54,7 +54,7 @@
 
 | 缺口 | 现状 | 改进方向 |
 |---|---|---|
-| 鉴权/数据隔离 | 匿名 session，GET 按 id 可读（IDOR） | Supabase Auth + 基于 `auth.uid()` 的 RLS |
+| ~~鉴权/数据隔离~~ | ~~匿名 session，GET 按 id 可读（IDOR）~~ | 已在 [ADR-0010](#adr-0010--匿名登录--rls-数据隔离修复-idor) 完成 |
 | Trace 形态 | 平表，retrieve 与 generate 无父子关联 | span 树 + correlation id（OTel 风格） |
 | 测试 | 仅 tsc + eval | 单测（评分纯函数）+ API 集成测试 + eval 进 CI |
 | 公网实时性 | 真实产物为固化快照 | 带限流/鉴权的"在线真跑"环境 |
@@ -66,4 +66,10 @@
 
 - **Context**：诊断/方案/根因/复盘四处生成器各自重复"检索→组装提示→结构化生成→过滤引用→trace"，且"用 LLM 还是规则降级"的分支散落在各路由（有的甚至无 LLM 直接 503），形成两套真值/控制流。
 - **Decision**：抽象 `runAITask(task, input, ctx)` 运行器（`lib/ai/task.ts`）：把"RAG 检索 → 提示组装 → 结构化生成 → 后处理 → 确定性降级 → 统一 source/trace"收敛为一条管线；四个模块退化为声明式任务配置（`lib/ai/tasks/*`，各含同 schema 的规则降级）。路由只调 `runAITask`。
-- **Consequences**：✅ 消除重复，新增 AI 任务只写配置；✅ 降级逻辑集中一处，无 LLM 时优雅回落（不再 503）；✅ 重构后 **eval 6/6 用例 19/19 检查全绿 → 行为保持零回归**。⚠️ 客户端结果页的"规则视图 vs grounded 视图"渲染合一仍可进一步收敛（现已具备同 schema 基础）。
+- **Consequences**：✅ 消除重复，新增 AI 任务只写配置；✅ 降级逻辑集中一处，无 LLM 时优雅回落（不再 503）；✅ 重构后 **eval 6/6 用例 19/19 检查全绿 → 行为保持零回归**；✅ 客户端结果页"规则视图 vs grounded 视图"已合一（共用 `solutionFallback` 适配器 + `GroundedSolutionView`，离线/在线同一渲染路径）。
+
+## ADR-0010 · 匿名登录 + RLS 数据隔离（修复 IDOR）
+
+- **Context**：[ADR-0006](#adr-0006--匿名-session--优雅降级--公网用真实快照展示) 用匿名 `session_id` 归属数据，但 GET 按 id 即可读他人数据（IDOR）——隔离写在应用层、形同虚设。
+- **Decision**：浏览器 **Supabase 匿名登录**（`signInAnonymously`）拿 JWT → 业务调用经 `apiFetch` 自动带 `Authorization: Bearer` → 服务端按请求构造**用户态客户端**（anon key + 该 JWT），由 **Postgres RLS** 在 DB 层强制 `owner = auth.uid()`。8 张业务表加 `owner uuid default auth.uid()` + `own_policy`；featured 静态快照 / 知识检索 / Trace Viewer 仍走 service_role（共享语料 / 可观测面）。无 token / 未配 DB 时返回 null → 沿用既有「不持久化」降级路径。
+- **Consequences**：✅ 隔离下沉到 DB 层，**应用层就算写错也兜不漏**（纵深防御）；✅ 实测两匿名用户互读对方数据返回 404、无 token 返回 401；✅ 对公网零影响（未配 Supabase env → 继续走 featured + localStorage 降级，不崩）。⚠️ 匿名身份绑定浏览器、清缓存即丢，尚无真正的账号体系（邮箱/OAuth）；service_role 仍可越权（仅服务端持有，属预期）。
