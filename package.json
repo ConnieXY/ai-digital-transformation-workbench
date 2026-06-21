@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "ingest": "node --env-file=.env.local --import tsx scripts/ingest.ts",
-    "eval": "node --env-file=.env.local --import tsx scripts/eval.ts"
+    "eval": "node --env-file=.env.local --import tsx scripts/eval.ts",
+    "test": "node --import tsx --test \"tests/**/*.test.ts\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",

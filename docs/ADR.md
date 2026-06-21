@@ -56,7 +56,7 @@
 |---|---|---|
 | ~~鉴权/数据隔离~~ | ~~匿名 session，GET 按 id 可读（IDOR）~~ | 已在 [ADR-0010](#adr-0010--匿名登录--rls-数据隔离修复-idor) 完成 |
 | Trace 形态 | 平表，retrieve 与 generate 无父子关联 | span 树 + correlation id（OTel 风格） |
-| 测试 | 仅 tsc + eval | 单测（评分纯函数）+ API 集成测试 + eval 进 CI |
+| 测试 | tsc + eval + 纯函数单测（`npm test`，无密钥） | 扩展到评分/工作流等更多纯函数 + API 集成测试 + eval 进 CI |
 | 公网实时性 | 真实产物为固化快照 | 带限流/鉴权的"在线真跑"环境 |
 | 流式 | 同步等待 5–9s | 流式输出 / 后台任务 |
 
@@ -73,3 +73,12 @@
 - **Context**：[ADR-0006](#adr-0006--匿名-session--优雅降级--公网用真实快照展示) 用匿名 `session_id` 归属数据，但 GET 按 id 即可读他人数据（IDOR）——隔离写在应用层、形同虚设。
 - **Decision**：浏览器 **Supabase 匿名登录**（`signInAnonymously`）拿 JWT → 业务调用经 `apiFetch` 自动带 `Authorization: Bearer` → 服务端按请求构造**用户态客户端**（anon key + 该 JWT），由 **Postgres RLS** 在 DB 层强制 `owner = auth.uid()`。8 张业务表加 `owner uuid default auth.uid()` + `own_policy`；featured 静态快照 / 知识检索 / Trace Viewer 仍走 service_role（共享语料 / 可观测面）。无 token / 未配 DB 时返回 null → 沿用既有「不持久化」降级路径。
 - **Consequences**：✅ 隔离下沉到 DB 层，**应用层就算写错也兜不漏**（纵深防御）；✅ 实测两匿名用户互读对方数据返回 404、无 token 返回 401；✅ 对公网零影响（未配 Supabase env → 继续走 featured + localStorage 降级，不崩）。⚠️ 匿名身份绑定浏览器、清缓存即丢，尚无真正的账号体系（邮箱/OAuth）；service_role 仍可越权（仅服务端持有，属预期）。
+- **后续修复**：trace 详情曾对非 featured 记录 `select("*")`，把含用户业务数据的提示词经公开 `/traces` 泄露（绕过本 RLS）。已改为实时 trace 仅返回可观测元数据、`request/response` 置空并标记 `redacted`，featured 快照仍全量展示。教训：隔离要按**数据流**而非**表**审计——敏感数据会外溢到日志/trace。
+
+## ADR-0011 · 打通转型旅程（诊断→方案→闭环）+ 闭环成效指标
+
+- **Context**：诊断 / 方案 / 制造闭环三模块共用底座（[AITask](#adr-0009--统一-aitask-抽象合并规则llm-双路径) / RAG / trace / [RLS](#adr-0010--匿名登录--rls-数据隔离修复-idor)），却不共用**数据与导航**——"端到端"只到管线层，对用户是三个割裂的 demo；且系统只衡量**模型产出**（忠实度 / 召回），不衡量**对客户的结果**。
+- **Decision**：
+  1. **旅程数据流**：`lib/journey/fromDiagnosis.ts` 把诊断结论（成熟度 / 最弱维度 / 推荐场景 / 主痛点）映射为方案输入——最弱维度→业务目标、主痛点关键词→预选痛点、结论凝练进 `additionalContext`（真正喂给方案 LLM，使方案以诊断为条件生成）；方案输入页继承上下文 + 来源横幅；`components/JourneySteps.tsx` 三步导航贯穿 报告 / 方案结果 / 复盘 三页。
+  2. **闭环成效**：`lib/manufacturing/outcome.ts` `computeLoopOutcome` 从真实任务与工作流事件派生（任务闭环率 / AI 自动化环节占比 / 审计事件数 / 覆盖阶段）；复盘 GET 返回 `outcome`，`OutcomePanel` 展示，featured 快照注入同一结构。
+- **Consequences**：✅ 三模块从"共用插件"升级为"一条可量化的客户旅程"；✅ 成效**口径诚实**——闭环率 / AI 占比 / 审计为真实派生，SLA 明确标为运营目标而非 A/B 实测，刻意不喊"时长降低 99%"（demo 压缩时间换来的假对比）；✅ 两个映射均为纯函数，已补**无密钥单元测试**（`tests/`，`npm test`，CI 可跑）。⚠️ 诊断→方案的行业/痛点映射为**启发式**（关键词命中），跨行业语料弱时方案仍可能偏泛；闭环成效目前为**单实例派生**，尚无跨案例聚合趋势。
