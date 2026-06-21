@@ -56,15 +56,10 @@ Next.js 14（App Router）· React 18 · TypeScript · Tailwind · Supabase（Po
 
 ## 文档
 
-👉 **[文档中心 docs/](docs/README.md)** —— 所有文档入口。面向非技术用户可直接看产品介绍手册：[中文](docs/USER_GUIDE.md) ｜ [English](docs/USER_GUIDE.en.md)。
-
 | 文档 | 内容 |
 |---|---|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 架构总览 + 数据流图（Mermaid） |
 | [docs/ADR.md](docs/ADR.md) | 架构决策记录（为什么这么做 + 取舍 + 已知边界） |
-| [docs/CASE_STUDY.md](docs/CASE_STUDY.md) | 案例研究（问题→方法→结果→学习） |
-| [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) | 2–3 分钟演示脚本 |
-| [docs/RESUME_BULLETS.md](docs/RESUME_BULLETS.md) | 要点 |
 
 ## 本地运行
 

@@ -66,15 +66,10 @@ The three modules are not isolated tools — each step's output is the next step
 
 ## Documentation
 
-👉 **[Documentation hub: docs/](docs/README.md)** — entry to all docs. Non-technical readers can jump straight to the product guide: [中文](docs/USER_GUIDE.md) ｜ [English](docs/USER_GUIDE.en.md).
-
 | Doc | Contents |
 |---|---|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture overview + data-flow diagram (Mermaid) |
 | [docs/ADR.md](docs/ADR.md) | Architecture Decision Records (why + trade-offs + known boundaries) |
-| [docs/CASE_STUDY.md](docs/CASE_STUDY.md) | Case study (problem → approach → results → learnings) |
-| [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) | 2–3 minute demo script |
-| [docs/RESUME_BULLETS.md](docs/RESUME_BULLETS.md) | notes |
 
 ## Run locally
 
