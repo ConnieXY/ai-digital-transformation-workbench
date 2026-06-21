@@ -22,6 +22,7 @@ interface Trace {
   citations: unknown;
   error: string | null;
   created_at: string;
+  redacted?: boolean;
 }
 
 function Json({ value }: { value: unknown }) {
@@ -151,19 +152,37 @@ export default function TraceDetailPage() {
           </section>
         )}
 
-        <section>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-ink-500">
-            请求 Request
-          </h2>
-          <Json value={trace.request} />
-        </section>
+        {trace.redacted ? (
+          <section>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              <p className="font-semibold">请求 / 响应内容已隐藏</p>
+              <p className="mt-1 leading-relaxed text-amber-700">
+                实时 trace 的原始 request/response 含用户填写的业务信息，出于数据隔离不在此公开展示；
+                上方为可观测元数据（成本 / 延迟 / 状态 / 检索引用）。完整请求与结构化输出请见经审定的{" "}
+                <Link href="/traces" className="font-medium underline">
+                  示例 trace
+                </Link>
+                。
+              </p>
+            </div>
+          </section>
+        ) : (
+          <>
+            <section>
+              <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-ink-500">
+                请求 Request
+              </h2>
+              <Json value={trace.request} />
+            </section>
 
-        <section>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-ink-500">
-            结构化输出 Response
-          </h2>
-          <Json value={trace.response} />
-        </section>
+            <section>
+              <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-ink-500">
+                结构化输出 Response
+              </h2>
+              <Json value={trace.response} />
+            </section>
+          </>
+        )}
       </div>
     </PageShell>
   );
