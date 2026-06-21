@@ -1,0 +1,33 @@
+name: CI
+
+# 每次推送 main / 提 PR 时自动跑：类型检查 + 单元测试 + 构建。
+# 全程无需任何密钥（测试为纯函数；构建在运行时才读 env，缺省安全降级）。
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build

@@ -109,21 +109,5 @@ export async function runAITask<I, O>(
   throw new LLMUnavailableError(`任务 ${task.step} 需要 LLM 且无降级`);
 }
 
-/** 把带编号的来源拼成喂给 LLM 的知识块（引用其序号）。 */
-export function buildKnowledgeBlock(
-  sources: SolutionSource[],
-  chunkContents: string[],
-): string {
-  return sources
-    .map((s, i) => `[${s.index}] (${s.docType}) ${s.title}\n${chunkContents[i]}`)
-    .join("\n\n");
-}
-
-/** 过滤越界引用（保证 citations 只含有效来源序号）。 */
-export function filterCitations(
-  cites: number[],
-  sources: SolutionSource[],
-): number[] {
-  const valid = new Set(sources.map((s) => s.index));
-  return (cites ?? []).filter((n) => valid.has(n));
-}
+// 纯引用助手拆到非 server-only 模块，便于单测；此处转出以保持既有 import 路径不变。
+export { buildKnowledgeBlock, filterCitations } from "@/lib/ai/citations";

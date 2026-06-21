@@ -56,7 +56,7 @@
 |---|---|---|
 | ~~鉴权/数据隔离~~ | ~~匿名 session，GET 按 id 可读（IDOR）~~ | 已在 [ADR-0010](#adr-0010--匿名登录--rls-数据隔离修复-idor) 完成 |
 | Trace 形态 | 平表，retrieve 与 generate 无父子关联 | span 树 + correlation id（OTel 风格） |
-| 测试 | tsc + eval + 纯函数单测（`npm test`，无密钥） | 扩展到评分/工作流等更多纯函数 + API 集成测试 + eval 进 CI |
+| 测试 / CI | tsc + 纯函数单测（`npm test`，无密钥）+ **GitHub Actions 自动跑**（[ADR-0012](#adr-0012--接入-ci自动门禁)） | API 集成测试 + 离线 eval 进 CI |
 | 公网实时性 | 真实产物为固化快照 | 带限流/鉴权的"在线真跑"环境 |
 | 流式 | 同步等待 5–9s | 流式输出 / 后台任务 |
 
@@ -82,3 +82,9 @@
   1. **旅程数据流**：`lib/journey/fromDiagnosis.ts` 把诊断结论（成熟度 / 最弱维度 / 推荐场景 / 主痛点）映射为方案输入——最弱维度→业务目标、主痛点关键词→预选痛点、结论凝练进 `additionalContext`（真正喂给方案 LLM，使方案以诊断为条件生成）；方案输入页继承上下文 + 来源横幅；`components/JourneySteps.tsx` 三步导航贯穿 报告 / 方案结果 / 复盘 三页。
   2. **闭环成效**：`lib/manufacturing/outcome.ts` `computeLoopOutcome` 从真实任务与工作流事件派生（任务闭环率 / AI 自动化环节占比 / 审计事件数 / 覆盖阶段）；复盘 GET 返回 `outcome`，`OutcomePanel` 展示，featured 快照注入同一结构。
 - **Consequences**：✅ 三模块从"共用插件"升级为"一条可量化的客户旅程"；✅ 成效**口径诚实**——闭环率 / AI 占比 / 审计为真实派生，SLA 明确标为运营目标而非 A/B 实测，刻意不喊"时长降低 99%"（demo 压缩时间换来的假对比）；✅ 两个映射均为纯函数，已补**无密钥单元测试**（`tests/`，`npm test`，CI 可跑）。⚠️ 诊断→方案的行业/痛点映射为**启发式**（关键词命中），跨行业语料弱时方案仍可能偏泛；闭环成效目前为**单实例派生**，尚无跨案例聚合趋势。
+
+## ADR-0012 · 接入 CI（自动门禁）
+
+- **Context**：此前虽有单测，却**没有任何东西自动跑它们**——改坏了也不会被发现，"测试守护主干"只是愿景。eval 是在线集成评测（需服务器 + 密钥），进不了无密钥 CI。
+- **Decision**：加 `.github/workflows/ci.yml`，在 push `main` / 提 PR 时自动跑 **类型检查（`tsc --noEmit`）+ 单元测试（`npm test`）+ 构建（`next build`）**，全程**无需任何密钥**（单测为纯函数；构建运行时才读 env、缺省安全降级）。为支持 `node --test` 的 glob 与 `--import tsx`，CI 固定 Node 22。把纯逻辑（`canTransition`、`filterCitations`/`buildKnowledgeBlock`）从 `server-only` 模块拆出到 `lib/workflow/incidentStates.ts`、`lib/ai/citations.ts` 并转出，使其在 Node 测试环境可直接导入。
+- **Consequences**：✅ 测试从"摆设"变"门禁"——任何破坏类型/纯逻辑/构建的改动在 PR 即被红叉拦下；✅ 纯逻辑脱离 server-only，架构更干净、复用更自由；✅ 单测覆盖扩到 6 套 29 例（诊断评分 / 状态机 / 引用过滤 / 旅程映射 / 成效计算）。⚠️ 仍只覆盖**纯函数**；API 集成测试与**离线 eval 进 CI** 待补（在线 eval 仍需手动跑）。

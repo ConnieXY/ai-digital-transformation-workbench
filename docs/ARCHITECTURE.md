@@ -9,7 +9,7 @@
 1. **结构化**：模糊诉求 → 结构化诊断 / 方案 / 根因（强制 schema 校验）。
 2. **Grounded**：方案与根因基于知识库 RAG，**带可核验的引用**，无依据时诚实弃权。
 3. **嵌入业务**：把 AI 塞进制造业质量异常的真实闭环（状态机 + human-in-the-loop）。
-4. **Production-minded**：可观测（trace）、可评测（eval）、优雅降级、密钥隔离、可维护。
+4. **Production-minded**：可观测（trace）、可评测（eval）、可测试（单测 + CI）、优雅降级、密钥隔离、可维护。
 
 ## 2. 技术栈
 
@@ -72,7 +72,8 @@ flowchart TD
 - **RAG grounding**：`lib/rag/retrieve.ts` 检索后做**相关性门控**（cos ≥ 0.48）；生成提示要求"有依据才引用、无依据则弃权"；`evals/` 用 **LLM-as-judge 忠实度**核验"引用≠依据"。
 - **工作流状态机**：`lib/workflow/incident.ts` 校验合法转移，每次流转写 `workflow_events`（区分 `ai` / `human`）。
 - **可观测性**：`/traces` 读 `llm_traces`，展示成本/延迟(p50/p95)/结构化输出/RAG 引用/错误。
-- **可评测**：`npm run eval` 跑黄金集，输出 scorecard（CI 可门禁）。
+- **可评测**：`npm run eval` 跑黄金集，输出 scorecard（在线评测）。
+- **可测试 / CI**：纯逻辑单测 `npm test`（无密钥），GitHub Actions 每次 push/PR 自动跑 **tsc + test + build**（[ADR-0012](ADR.md#adr-0012--接入-ci自动门禁)）。
 - **优雅降级**：未配 LLM/DB key 时回落规则路径；公网用**固化的真实 AI 快照**（`data/featured/*`）展示真实产物，零成本零滥用。
 - **密钥安全**：客户端不直连 DB/LLM；service_role 与 LLM key 仅服务端。
 
@@ -93,5 +94,7 @@ scripts/        ingest.ts(灌库) / eval.ts(评测)
 knowledge/      RAG 语料（合成、标注来源）
 supabase/migrations/  schema + pgvector + RPC
 evals/          黄金集 + latest.json(最近评测结果)
+tests/          纯函数单测（Node 内置测试 + tsx，无密钥）
+.github/workflows/  ci.yml（tsc + test + build 自动门禁）
 docs/           本套文档（架构 / ADR）
 ```
