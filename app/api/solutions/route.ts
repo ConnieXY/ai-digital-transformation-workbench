@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getUserClient } from "@/lib/supabase/userClient";
+import { enforceRateLimit } from "@/lib/ratelimit";
 import { runAITask } from "@/lib/ai/task";
 import { solutionTask } from "@/lib/ai/tasks/solution";
 
@@ -21,6 +22,13 @@ const BodySchema = z.object({
 });
 
 export async function POST(req: Request) {
+  const rl = enforceRateLimit(req);
+  if (rl)
+    return NextResponse.json(
+      { error: "rate_limited", detail: "请求过于频繁，请稍后再试" },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+    );
+
   let body: z.infer<typeof BodySchema>;
   try {
     body = BodySchema.parse(await req.json());

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { type Answers, type CompanyInfo } from "@/data/diagnosis";
 import { scoreDiagnosis } from "@/lib/scoring";
 import { getUserClient } from "@/lib/supabase/userClient";
+import { enforceRateLimit } from "@/lib/ratelimit";
 import { hasLLM } from "@/lib/env";
 import { runAITask } from "@/lib/ai/task";
 import { diagnosisInsightTask } from "@/lib/ai/tasks/diagnosisInsight";
@@ -24,6 +25,13 @@ const BodySchema = z.object({
 });
 
 export async function POST(req: Request) {
+  const rl = enforceRateLimit(req);
+  if (rl)
+    return NextResponse.json(
+      { error: "rate_limited", detail: "请求过于频繁，请稍后再试" },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+    );
+
   let body: z.infer<typeof BodySchema>;
   try {
     body = BodySchema.parse(await req.json());

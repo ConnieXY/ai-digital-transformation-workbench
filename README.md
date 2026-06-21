@@ -66,7 +66,7 @@ npm run eval                   # 离线评测（需 dev server 在跑）
 
 ## 状态与边界（诚实声明）
 
-**演示 / 预览版**。已知取舍与路线图见 [ADR-0008](docs/ADR.md#adr-0008--已知缺口与路线图诚实边界)：公网为只读真实快照、trace 为平表。已有纯函数单元测试 + GitHub Actions CI（tsc + test + build，[ADR-0012](docs/ADR.md#adr-0012--接入-ci自动门禁)）；数据隔离已用匿名登录 + Postgres RLS 修复 IDOR（[ADR-0010](docs/ADR.md#adr-0010--匿名登录--rls-数据隔离修复-idor)），但匿名身份绑定浏览器、尚无真正账号体系。下一步：API 集成测试 + 离线 eval 进 CI、trace 升级 span 树、真正的登录（邮箱/OAuth）。
+**演示 / 预览版**。已知取舍与路线图见 [ADR-0008](docs/ADR.md#adr-0008--已知缺口与路线图诚实边界)：公网为只读真实快照、trace 为平表。工程底座已具备：数据隔离（匿名登录 + Postgres RLS 修复 IDOR，[ADR-0010](docs/ADR.md#adr-0010--匿名登录--rls-数据隔离修复-idor)）、滥用与成本防护（限流 + 当日 LLM 成本上限，超限优雅降级，[ADR-0013](docs/ADR.md#adr-0013--滥用与成本防护限流--当日成本上限)）、纯函数单测 + GitHub Actions CI（tsc + test + build，[ADR-0012](docs/ADR.md#adr-0012--接入-ci自动门禁)）。仍待补：真正账号体系（匿名身份绑定浏览器）、组织级多租户、API 集成测试 + 离线 eval 进 CI、trace 升级 span 树。
 
 ## 作者
 

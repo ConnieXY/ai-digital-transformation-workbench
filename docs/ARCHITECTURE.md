@@ -76,6 +76,7 @@ flowchart TD
 - **可测试 / CI**：纯逻辑单测 `npm test`（无密钥），GitHub Actions 每次 push/PR 自动跑 **tsc + test + build**（[ADR-0012](ADR.md#adr-0012--接入-ci自动门禁)）。
 - **优雅降级**：未配 LLM/DB key 时回落规则路径；公网用**固化的真实 AI 快照**（`data/featured/*`）展示真实产物，零成本零滥用。
 - **密钥安全**：客户端不直连 DB/LLM；service_role 与 LLM key 仅服务端。
+- **滥用 / 成本防护**：按主体（匿名 JWT 的 sub，回退 IP）限流（`lib/ratelimit.ts`，超限 429）；**当日 LLM 成本上限**（`lib/llm/budget.ts`）直接复用 `llm_traces.cost_usd` 做预算闸，超限即按"LLM 不可用"降级为规则路径（[ADR-0013](ADR.md#adr-0013--滥用与成本防护限流--当日成本上限)）。
 
 ## 6. 目录结构
 

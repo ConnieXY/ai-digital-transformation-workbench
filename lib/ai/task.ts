@@ -2,7 +2,8 @@ import "server-only";
 import type { z } from "zod";
 import { retrieve } from "@/lib/rag/retrieve";
 import { runStructured } from "@/lib/llm/run";
-import { hasLLM } from "@/lib/env";
+import { hasLLM, env } from "@/lib/env";
+import { isOverDailyBudget } from "@/lib/llm/budget";
 import type { SolutionSource } from "@/lib/schemas/solution";
 import type { TraceEntityType } from "@/lib/llm/types";
 
@@ -79,8 +80,12 @@ export async function runAITask<I, O>(
     chunkContents = chunks.map((c) => c.content);
   }
 
-  // 2) LLM 路径
-  if (hasLLM) {
+  // 2) LLM 路径（超出当日成本上限时按「LLM 不可用」处理 → 走确定性降级）
+  if (hasLLM && (await isOverDailyBudget())) {
+    console.warn(
+      `[ai:${task.step}] 已达当日 LLM 成本上限（$${env.llmDailyCostCapUsd}），降级为规则路径`,
+    );
+  } else if (hasLLM) {
     try {
       const { system, user } = task.buildPrompt(input, sources, chunkContents);
       const generated = (await runStructured({

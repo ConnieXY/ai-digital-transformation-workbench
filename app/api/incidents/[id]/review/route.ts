@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserClient } from "@/lib/supabase/userClient";
+import { enforceRateLimit } from "@/lib/ratelimit";
 import { runAITask } from "@/lib/ai/task";
 import { incidentReviewTask } from "@/lib/ai/tasks/incidentReview";
 import { transition } from "@/lib/workflow/incident";
@@ -57,6 +58,13 @@ export async function POST(
   req: Request,
   { params }: { params: { id: string } },
 ) {
+  const rl = enforceRateLimit(req);
+  if (rl)
+    return NextResponse.json(
+      { error: "rate_limited", detail: "请求过于频繁，请稍后再试" },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } },
+    );
+
   const supabase = getUserClient(req);
   if (!supabase) return NextResponse.json({ error: "not authenticated" }, { status: 401 });
 

@@ -22,6 +22,10 @@ export const env = {
   embeddingModel: read("EMBEDDING_MODEL") || "text-embedding-3-small",
   embeddingApiKey: read("EMBEDDING_API_KEY"),
   embeddingDimensions: Number(read("EMBEDDING_DIMENSIONS") || "1536"),
+
+  // 滥用 / 成本防护
+  llmDailyCostCapUsd: Number(read("LLM_DAILY_COST_CAP_USD") || "5"),
+  ratePerMin: Number(read("RATE_LIMIT_PER_MIN") || "60"),
 };
 
 /** 是否已配置 Supabase（决定数据是否真实持久化） */
