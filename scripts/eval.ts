@@ -19,21 +19,48 @@ import {
   checkRecall,
 } from "../lib/eval/evaluators";
 import { judgeFaithfulness } from "../lib/eval/judge";
+import { cassette, cassetteMode, saveCassette } from "../lib/eval/cassette";
 
 const BASE = process.env.EVAL_BASE_URL?.trim() || "http://localhost:3000";
 const FAITHFULNESS_THRESHOLD = 0.8;
 
-async function post(p: string, body?: unknown) {
-  const r = await fetch(`${BASE}${p}`, {
+// 鉴权：Auth+RLS 后业务路由需带 JWT 才能持久化（拿到 id）。
+// 与浏览器一致，用 Supabase 匿名登录换 token；replay 无需联网/鉴权。
+let authToken: string | null = null;
+async function ensureToken(): Promise<void> {
+  if (cassetteMode === "replay" || authToken) return;
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ||
+    process.env.SUPABASE_URL?.trim();
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  if (!url || !anon) return; // 未配 Supabase → 退化为旧行为（diagnosis/incident 不持久化）
+  const r = await fetch(`${url}/auth/v1/signup`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: body ? JSON.stringify(body) : undefined,
+    headers: { apikey: anon, "content-type": "application/json" },
+    body: "{}",
   });
-  return { ok: r.ok, status: r.status, json: await r.json().catch(() => ({})) };
+  authToken = (await r.json().catch(() => ({})))?.access_token ?? null;
+}
+function authHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  return authToken ? { ...extra, Authorization: `Bearer ${authToken}` } : extra;
+}
+
+// post/get 与 judge 都经 cassette：live 直调；record 真调并录制；replay 仅回放（无服务器/无密钥）。
+async function post(p: string, body?: unknown) {
+  return cassette(`POST ${p} ${JSON.stringify(body ?? null)}`, async () => {
+    const r = await fetch(`${BASE}${p}`, {
+      method: "POST",
+      headers: authHeaders({ "Content-Type": "application/json" }),
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return { ok: r.ok, status: r.status, json: await r.json().catch(() => ({})) };
+  });
 }
 async function get(p: string) {
-  const r = await fetch(`${BASE}${p}`);
-  return { ok: r.ok, status: r.status, json: await r.json().catch(() => ({})) };
+  return cassette(`GET ${p}`, async () => {
+    const r = await fetch(`${BASE}${p}`, { headers: authHeaders() });
+    return { ok: r.ok, status: r.status, json: await r.json().catch(() => ({})) };
+  });
 }
 
 function evidenceFor(cites: number[], sources: SolutionSource[]): string {
@@ -56,7 +83,9 @@ async function faithfulness(
   const fails: string[] = [];
   for (const c of judged) {
     const ev = evidenceFor(c.cites, sources);
-    const res = await judgeFaithfulness(c.claim, ev);
+    const res = await cassette(`JUDGE ${c.claim} ||| ${ev}`, () =>
+      judgeFaithfulness(c.claim, ev),
+    );
     if (res.supported) supported++;
     else fails.push(c.claim.slice(0, 20));
   }
@@ -182,7 +211,11 @@ async function runCase(c: (typeof cases)[number]): Promise<CaseResult> {
 }
 
 async function main() {
-  console.log(`\n评测开始 @ ${BASE}\n`);
+  const where = cassetteMode === "replay" ? "回放磁带（离线·无密钥）" : BASE;
+  console.log(`\n评测开始 [${cassetteMode}] @ ${where}\n`);
+  await ensureToken();
+  if (cassetteMode !== "replay" && !authToken)
+    console.warn("  ⚠ 未取得鉴权 token：diagnosis/incident 将不持久化（检查 Supabase 配置与匿名登录）\n");
   const results: CaseResult[] = [];
   for (const c of cases) {
     process.stdout.write(`  running ${c.id} … `);
@@ -230,12 +263,19 @@ async function main() {
     console.log(`  ${m.padEnd(20)} ${v.passed}/${v.total}`);
   }
 
-  const dir = path.join(process.cwd(), "evals", "results");
-  fs.mkdirSync(dir, { recursive: true });
-  const file = path.join(dir, `${report.startedAt.replace(/[:.]/g, "-")}.json`);
-  fs.writeFileSync(file, JSON.stringify(report, null, 2));
-  fs.writeFileSync(path.join(process.cwd(), "evals", "latest.json"), JSON.stringify(report, null, 2));
-  console.log(`\n报告已写入 evals/latest.json`);
+  // record 模式：把本轮真调录成磁带，供 CI 离线回放
+  saveCassette();
+  if (cassetteMode === "record") console.log(`\n磁带已写入 evals/cassettes.json`);
+
+  // replay 模式不落地报告文件（CI 只关心退出码），避免污染工作树
+  if (cassetteMode !== "replay") {
+    const dir = path.join(process.cwd(), "evals", "results");
+    fs.mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, `${report.startedAt.replace(/[:.]/g, "-")}.json`);
+    fs.writeFileSync(file, JSON.stringify(report, null, 2));
+    fs.writeFileSync(path.join(process.cwd(), "evals", "latest.json"), JSON.stringify(report, null, 2));
+    console.log(`\n报告已写入 evals/latest.json`);
+  }
 
   // 任一用例失败则非零退出（便于 CI 门禁）
   process.exit(report.summary.passedCases === report.summary.totalCases ? 0 : 1);

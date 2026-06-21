@@ -29,5 +29,8 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Eval (replay cassettes, no keys)
+        run: npm run eval:ci
+
       - name: Build
         run: npm run build

@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-06-20T09:54:20.269Z",
+  "startedAt": "2026-06-21T05:54:21.351Z",
   "baseUrl": "http://localhost:3000",
   "cases": [
     {
@@ -94,7 +94,7 @@
         {
           "name": "top_cause_relevant",
           "passed": true,
-          "detail": "首要原因：新供应商来料表面硬度下降，导致划痕易产生"
+          "detail": "首要原因：新供应商来料表面硬度下降，导致搬运周转中易产生划痕"
         },
         {
           "name": "keywords",

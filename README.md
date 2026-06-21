@@ -66,7 +66,7 @@ npm run eval                   # 离线评测（需 dev server 在跑）
 
 ## 状态与边界（诚实声明）
 
-**演示 / 预览版**。已知取舍与路线图见 [ADR-0008](docs/ADR.md#adr-0008--已知缺口与路线图诚实边界)：公网为只读真实快照、trace 为平表。工程底座已具备：数据隔离（匿名登录 + Postgres RLS 修复 IDOR，[ADR-0010](docs/ADR.md#adr-0010--匿名登录--rls-数据隔离修复-idor)）、滥用与成本防护（限流 + 当日 LLM 成本上限，超限优雅降级，[ADR-0013](docs/ADR.md#adr-0013--滥用与成本防护限流--当日成本上限)）、纯函数单测 + GitHub Actions CI（tsc + test + build，[ADR-0012](docs/ADR.md#adr-0012--接入-ci自动门禁)）。仍待补：真正账号体系（匿名身份绑定浏览器）、组织级多租户、API 集成测试 + 离线 eval 进 CI、trace 升级 span 树。
+**演示 / 预览版**。已知取舍与路线图见 [ADR-0008](docs/ADR.md#adr-0008--已知缺口与路线图诚实边界)：公网为只读真实快照、trace 为平表。工程底座已具备：数据隔离（匿名登录 + Postgres RLS 修复 IDOR，[ADR-0010](docs/ADR.md#adr-0010--匿名登录--rls-数据隔离修复-idor)）、滥用与成本防护（限流 + 当日 LLM 成本上限，超限优雅降级，[ADR-0013](docs/ADR.md#adr-0013--滥用与成本防护限流--当日成本上限)）、CI 自动门禁（tsc + 纯函数单测 + **录制式 eval 回放**，全程无密钥，[ADR-0012](docs/ADR.md#adr-0012--接入-ci自动门禁) / [ADR-0014](docs/ADR.md#adr-0014--录制式-eval-进-ci离线无密钥的评测门禁)）。仍待补：真正账号体系（匿名身份绑定浏览器）、组织级多租户、API 集成测试、trace 升级 span 树。
 
 ## 作者
 
