@@ -1,5 +1,7 @@
 # 企业 AI 数智化转型工作台 · AI Transformation Workbench
 
+**中文** ｜ [English](README.en.md)
+
 > 端到端 AI 落地系统：把企业模糊的 AI 转型诉求，转化为**可信、可观测、可演示**的诊断、方案与业务闭环。
 
 🔗 **在线体验**：<https://aiworkbench.wowonderwhy.com>
@@ -24,9 +26,10 @@
 - **结构化诊断**：6D 成熟度问卷 → LLM 结构化洞察（Zod 校验）。
 - **Grounded 方案**：RAG 检索知识库 → 方案/根因**强制引用来源**；无依据则诚实弃权。
 - **业务闭环**：制造业质量异常 上报→根因→任务→看板(human-in-the-loop)→复盘，状态机 + 事件审计。
+- **一条转型旅程**：诊断结论自动喂给方案，方案落到运营闭环，并给出**真实数据派生的闭环成效指标**（任务闭环率 / AI 自动化占比 / 可追溯审计数）。
 - **可观测**：每次 LLM/embedding 调用写 `llm_traces`，`/traces` 看成本/延迟(p50·p95)/结构化输出/RAG 引用/错误。
-- **可评测**：`npm run eval` 跑黄金集（schema/引用/**忠实度 LLM-as-judge**/召回），可作 CI 门禁。
-- **工程取舍**：provider 抽象（不写死厂商）、优雅降级、密钥仅服务端、公网真实快照。
+- **可评测 + CI**：`npm run eval` 跑黄金集（schema/引用/**忠实度 LLM-as-judge**/召回）；**录制式回放**让评测无密钥进 CI（`tsc + 单测 + eval 回放 + build` 自动门禁）。
+- **工程底座**：数据隔离（匿名登录 + Postgres RLS）、滥用/成本防护（限流 + 当日成本上限）、provider 抽象（不写死厂商）、优雅降级、密钥仅服务端、公网真实快照。
 
 ## 关键结果
 
@@ -56,10 +59,13 @@ Next.js 14（App Router）· React 18 · TypeScript · Tailwind · Supabase（Po
 ```bash
 npm install
 cp .env.example .env.local     # 填 Supabase 与 LLM/Embedding key（见 .env.example 注释）
-# 在 Supabase SQL Editor 运行 supabase/migrations/0001_init.sql 与 0002_fix_vector_search.sql
+# 在 Supabase SQL Editor 依次运行 supabase/migrations/*.sql（0001 → 0002 → 0003）
+# 并在 Supabase 后台开启「Anonymous sign-ins」（用于 RLS 数据隔离）
 npm run ingest                 # 知识库灌库（chunk → embedding → pgvector）
 npm run dev                    # http://localhost:3000
-npm run eval                   # 离线评测（需 dev server 在跑）
+npm run eval                   # 在线评测（需 dev server 在跑 + key）
+npm test                       # 纯函数单测（无密钥）
+npm run eval:ci                # 录制式 eval 回放（无密钥、离线）
 ```
 
 > 未配 key 时自动降级为规则路径，公网即此模式 + 真实 AI 快照（不触发付费调用）。
