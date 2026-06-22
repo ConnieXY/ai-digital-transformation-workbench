@@ -131,12 +131,15 @@ export default function OnePagerPage() {
                       aria-hidden
                       className="mt-1.5 h-1.5 w-1.5 flex-none rounded-full bg-brand-500"
                     />
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-ink-900">
                         {sol.scenario}
                       </p>
                       <p className="mt-0.5 text-sm leading-relaxed text-ink-700">
                         {sol.solution}（{sol.tools}）
+                      </p>
+                      <p className="mt-1 inline-flex rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-700">
+                        预期价值 · {sol.value}
                       </p>
                     </div>
                   </li>
@@ -157,7 +160,7 @@ export default function OnePagerPage() {
             {/* 优先落地场景 */}
             <section>
               <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-500">
-                优先落地场景
+                优先落地场景（建议首个试点）
               </h2>
               <p className="mt-2 text-base font-semibold text-ink-900">
                 {result.priorityScenario.title}
@@ -165,6 +168,24 @@ export default function OnePagerPage() {
               <p className="mt-1 text-sm leading-relaxed text-ink-700">
                 {result.priorityScenario.summary}
               </p>
+              {result.priorityScenario.reasons.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-ink-500">为什么先做它</p>
+                  <ul className="mt-1.5 grid gap-1.5 sm:grid-cols-2">
+                    {result.priorityScenario.reasons.map((reason) => (
+                      <li
+                        key={reason}
+                        className="flex gap-2 text-xs leading-relaxed text-ink-700"
+                      >
+                        <span aria-hidden className="text-emerald-500">
+                          ✓
+                        </span>
+                        {reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </section>
           </div>
         </article>

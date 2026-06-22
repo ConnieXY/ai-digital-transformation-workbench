@@ -15,3 +15,6 @@ next-env.d.ts
 
 # eval 运行产物（保留 evals/latest.json）
 evals/results/
+
+# 本地私有文档（绝不上传）
+workbench-private-docs/

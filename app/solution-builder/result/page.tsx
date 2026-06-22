@@ -14,6 +14,7 @@ interface GroundedPayload {
   input: SolutionInput;
   grounded: GroundedSolution;
   sources: SolutionSource[];
+  source: "llm" | "rule";
 }
 
 export default function SolutionResultPage() {
@@ -30,7 +31,7 @@ export default function SolutionResultPage() {
         const raw = localStorage.getItem(SOLUTION_INPUT_KEY);
         if (!raw) return;
         const input = JSON.parse(raw) as SolutionInput;
-        setPayload({ input, grounded: solutionFallback(input), sources: [] });
+        setPayload({ input, grounded: solutionFallback(input), sources: [], source: "rule" });
       } catch {
         setPayload(null);
       }
@@ -50,6 +51,7 @@ export default function SolutionResultPage() {
             input: d.input,
             grounded: d.grounded,
             sources: d.sources ?? [],
+            source: d.source === "rule" ? "rule" : "llm",
           });
         } else {
           loadLocal();
@@ -112,6 +114,7 @@ export default function SolutionResultPage() {
         input={payload.input}
         grounded={payload.grounded}
         sources={payload.sources}
+        source={payload.source}
       />
     </PageShell>
   );

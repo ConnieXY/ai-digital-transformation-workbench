@@ -140,10 +140,11 @@ export default function AboutPage() {
             <div className="flex flex-wrap gap-2">
               {[
                 "Next.js",
-                "React",
-                "Tailwind CSS",
+                "TypeScript",
+                "Supabase / pgvector",
+                "OpenAI 兼容 LLM（DeepSeek）",
+                "RAG · 向量检索",
                 "Claude Code",
-                "Dify（可扩展）",
               ].map((tech) => (
                 <span
                   key={tech}
@@ -191,11 +192,12 @@ export default function AboutPage() {
           <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-8">
             <ul className="space-y-2.5">
               {[
-                "接入真实 AI 模型与 Dify 工作流，替换当前内置规则。",
-                "扩展更多行业的痛点地图与解决方案模板。",
-                "丰富更多业务场景 Demo（如零售、物流、服务闭环）。",
-                "支持方案与复盘报告一键导出（PDF / PPT）。",
-                "引入账户体系与数据持久化，支持多人协作与版本沉淀。",
+                "组织级多租户与团队协作：多人共享同一份数据、角色与权限。",
+                "支持导入企业自有知识库，让方案更「懂你的业务」。",
+                "流式输出与后台任务：更快的交互、长流程不阻塞。",
+                "与企业内部系统（ERP / MES 等）集成。",
+                "扩展更多行业的深度场景（零售、物流、服务闭环）。",
+                "方案与复盘报告一键导出（PDF / PPT）。",
               ].map((point) => (
                 <li
                   key={point}

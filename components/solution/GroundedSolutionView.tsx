@@ -14,11 +14,14 @@ export default function GroundedSolutionView({
   input,
   grounded,
   sources,
+  source = "llm",
 }: {
   input: SolutionInput;
   grounded: GroundedSolution;
   sources: SolutionSource[];
+  source?: "llm" | "rule";
 }) {
+  const isRule = source === "rule";
   return (
     <PageBody>
       {/* 抬头 */}
@@ -39,10 +42,17 @@ export default function GroundedSolutionView({
                 {input.industry}数智化解决方案
               </h1>
             </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
-              AI 生成 · 知识库引用 {sources.length} 条
-            </span>
+            {isRule ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-ink-500">
+                <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                规则生成（未接 LLM）· 无知识库引用
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
+                AI 生成 · 知识库引用 {sources.length} 条
+              </span>
+            )}
           </div>
         </div>
       </section>
@@ -127,13 +137,25 @@ export default function GroundedSolutionView({
         </div>
 
         {/* 来源清单 */}
-        <section>
-          <h2 className="mb-4 text-xl font-bold tracking-tight text-ink-900">
-            知识库来源
-          </h2>
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-            <ul className="divide-y divide-slate-100">
-              {sources.map((s) => (
+        {sources.length === 0 ? (
+          <section className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-500">
+              知识库来源
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-ink-600">
+              本方案为<strong>规则降级</strong>生成（当前环境未接入 LLM 与知识库检索），故无可核验引用。
+              接入 LLM + RAG 后，这里会逐条列出每条建议的知识库出处与相似度。
+              想直接看带引用的真实 AI 产物，可在首页打开<strong>「查看真实 AI 示例」</strong>。
+            </p>
+          </section>
+        ) : (
+          <section>
+            <h2 className="mb-4 text-xl font-bold tracking-tight text-ink-900">
+              知识库来源
+            </h2>
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
+              <ul className="divide-y divide-slate-100">
+                {sources.map((s) => (
                 <li key={s.index} className="flex gap-3 p-4">
                   <span className="grid h-6 w-6 flex-none place-items-center rounded-md bg-slate-100 text-xs font-semibold text-ink-500">
                     {s.index}
@@ -155,10 +177,11 @@ export default function GroundedSolutionView({
                     </p>
                   </div>
                 </li>
-              ))}
-            </ul>
-          </div>
-        </section>
+                ))}
+              </ul>
+            </div>
+          </section>
+        )}
 
         {/* 底部按钮 */}
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">

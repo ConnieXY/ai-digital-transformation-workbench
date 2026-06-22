@@ -11,6 +11,7 @@ import {
   INCIDENT_STORAGE_KEY,
 } from "@/data/manufacturing";
 import { buildTasks, taskColumns } from "@/lib/taskBuilder";
+import { STATE_LABEL } from "@/lib/workflow/incidentStates";
 
 interface DbTask {
   id: string;
@@ -20,6 +21,23 @@ interface DbTask {
   due: string | null;
   status: string;
   description: string | null;
+}
+
+interface WorkflowEvent {
+  from_state: string | null;
+  to_state: string | null;
+  actor: string;
+  note: string | null;
+  created_at: string;
+}
+
+const stateText = STATE_LABEL as Record<string, string>;
+
+function fmtTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
 const priorityStyle: Record<string, string> = {
@@ -34,6 +52,7 @@ export default function TaskBoardPage() {
   const [loading, setLoading] = useState(false);
   const [incidentId, setIncidentId] = useState<string | null>(null);
   const [dbTasks, setDbTasks] = useState<DbTask[] | null>(null);
+  const [events, setEvents] = useState<WorkflowEvent[]>([]);
   const [ruleIncident, setRuleIncident] = useState<IncidentInput | null>(null);
   const [reviewing, setReviewing] = useState(false);
 
@@ -42,6 +61,7 @@ export default function TaskBoardPage() {
     if (!res.ok) throw new Error("not found");
     const d = await res.json();
     setDbTasks(d.tasks as DbTask[]);
+    setEvents((d.events as WorkflowEvent[]) ?? []);
   }
 
   useEffect(() => {
@@ -218,7 +238,7 @@ export default function TaskBoardPage() {
                           </div>
                           <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-3">
                             <span className="rounded-md bg-slate-50 px-2 py-0.5 text-[11px] text-ink-700">
-                              {task.department}
+                              责任方：{task.department || "—"}
                             </span>
                             {task.due && (
                               <span className="rounded-md bg-brand-50 px-2 py-0.5 text-[11px] font-medium text-brand-700">
@@ -253,6 +273,54 @@ export default function TaskBoardPage() {
             })}
           </div>
         </div>
+
+        {/* 处理过程 · 流转记录（人机协同审计） */}
+        {editable && events.length > 0 && (
+          <div className="mt-12 rounded-2xl border border-slate-200 bg-white p-6 shadow-card sm:p-8">
+            <h2 className="text-lg font-bold tracking-tight text-ink-900">
+              处理过程 · 流转记录
+            </h2>
+            <p className="mt-1 text-sm text-ink-500">
+              每一步谁做的（AI / 人工）、改了什么、何时——全程可追溯（human-in-the-loop 审计）。
+            </p>
+            <ol className="mt-5 space-y-4 border-l border-slate-200 pl-5">
+              {events.map((e, i) => (
+                <li key={i} className="relative">
+                  <span
+                    aria-hidden
+                    className="absolute -left-[26px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-brand-500"
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                        e.actor === "ai"
+                          ? "bg-brand-100 text-brand-700"
+                          : "bg-violet-100 text-violet-700"
+                      }`}
+                    >
+                      {e.actor === "ai" ? "AI" : "人工"}
+                    </span>
+                    {(e.from_state || e.to_state) && (
+                      <span className="text-xs text-ink-500">
+                        {(e.from_state && stateText[e.from_state]) || e.from_state || "—"}
+                        {" → "}
+                        {(e.to_state && stateText[e.to_state]) || e.to_state || "—"}
+                      </span>
+                    )}
+                    <span className="text-[11px] text-ink-300">
+                      {fmtTime(e.created_at)}
+                    </span>
+                  </div>
+                  {e.note && (
+                    <p className="mt-1 text-sm leading-relaxed text-ink-700">
+                      {e.note}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
 
         {/* 底部按钮 */}
         <div className="mt-10 flex justify-center">
