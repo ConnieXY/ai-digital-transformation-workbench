@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getUserClient } from "@/lib/supabase/userClient";
-import { enforceRateLimit } from "@/lib/ratelimit";
+import { enforceRateLimit, identityFromRequest } from "@/lib/ratelimit";
 import { runAITask } from "@/lib/ai/task";
 import { solutionTask } from "@/lib/ai/tasks/solution";
 
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
   const { output: grounded, sources, source } = await runAITask(
     solutionTask,
     input,
-    { sessionId, entityId: id },
+    { sessionId, entityId: id, quotaKey: identityFromRequest(req) },
   );
 
   if (supabase && id) {

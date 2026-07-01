@@ -2,8 +2,9 @@ import "server-only";
 import type { z } from "zod";
 import { retrieve } from "@/lib/rag/retrieve";
 import { runStructured } from "@/lib/llm/run";
-import { hasLLM, env } from "@/lib/env";
+import { canUsePublicAI, env } from "@/lib/env";
 import { isOverDailyBudget } from "@/lib/llm/budget";
+import { consumePublicAICredits } from "@/lib/ai/credits";
 import type { SolutionSource } from "@/lib/schemas/solution";
 import type { TraceEntityType } from "@/lib/llm/types";
 
@@ -12,6 +13,7 @@ export class LLMUnavailableError extends Error {}
 export interface AITaskContext {
   sessionId?: string;
   entityId?: string | null;
+  quotaKey?: string | null;
 }
 
 /** RAG 检索配置（可选；无此项的任务不检索） */
@@ -59,6 +61,34 @@ export async function runAITask<I, O>(
   input: I,
   ctx: AITaskContext = {},
 ): Promise<AITaskResult<O>> {
+  const fallback = (sources: SolutionSource[] = []): AITaskResult<O> => {
+    if (task.fallback) {
+      return { output: task.fallback(input, sources), sources, source: "rule" };
+    }
+    throw new LLMUnavailableError(`任务 ${task.step} 需要 LLM 且无降级`);
+  };
+
+  // 0) 公网真实 AI 总开关 + 全站成本上限 + 匿名 credits。
+  // 未通过任一闸门时，不做 RAG/LLM 付费调用，直接走确定性降级。
+  if (!canUsePublicAI) {
+    return fallback();
+  }
+
+  if (await isOverDailyBudget()) {
+    console.warn(
+      `[ai:${task.step}] 已达当日 LLM 成本上限（$${env.llmDailyCostCapUsd}），降级为规则路径`,
+    );
+    return fallback();
+  }
+
+  const credit = await consumePublicAICredits(ctx.quotaKey, task.step);
+  if (!credit.ok) {
+    console.warn(
+      `[ai:${task.step}] public AI credits 不足或不可用（reason=${credit.reason}），降级为规则路径`,
+    );
+    return fallback();
+  }
+
   // 1) RAG 检索（可选）
   let sources: SolutionSource[] = [];
   let chunkContents: string[] = [];
@@ -80,38 +110,36 @@ export async function runAITask<I, O>(
     chunkContents = chunks.map((c) => c.content);
   }
 
-  // 2) LLM 路径（超出当日成本上限时按「LLM 不可用」处理 → 走确定性降级）
-  if (hasLLM && (await isOverDailyBudget())) {
+  // 2) LLM 路径。RAG embedding 写入成本后再检查一次，避免接近上限时继续 chat。
+  if (await isOverDailyBudget()) {
     console.warn(
       `[ai:${task.step}] 已达当日 LLM 成本上限（$${env.llmDailyCostCapUsd}），降级为规则路径`,
     );
-  } else if (hasLLM) {
-    try {
-      const { system, user } = task.buildPrompt(input, sources, chunkContents);
-      const generated = (await runStructured({
-        schema: task.schema,
-        system,
-        user,
-        step: task.step,
-        entityType: task.entityType,
-        entityId: ctx.entityId,
-        sessionId: ctx.sessionId,
-      })) as O;
-      const output = task.postProcess
-        ? task.postProcess(generated, sources)
-        : generated;
-      return { output, sources, source: "llm" };
-    } catch (e) {
-      if (!task.fallback) throw e;
-      console.error(`[ai:${task.step}] LLM 失败，回落确定性降级：`, e);
-    }
+    return fallback(sources);
+  }
+
+  try {
+    const { system, user } = task.buildPrompt(input, sources, chunkContents);
+    const generated = (await runStructured({
+      schema: task.schema,
+      system,
+      user,
+      step: task.step,
+      entityType: task.entityType,
+      entityId: ctx.entityId,
+      sessionId: ctx.sessionId,
+    })) as O;
+    const output = task.postProcess
+      ? task.postProcess(generated, sources)
+      : generated;
+    return { output, sources, source: "llm" };
+  } catch (e) {
+    if (!task.fallback) throw e;
+    console.error(`[ai:${task.step}] LLM 失败，回落确定性降级：`, e);
   }
 
   // 3) 确定性降级
-  if (task.fallback) {
-    return { output: task.fallback(input, sources), sources, source: "rule" };
-  }
-  throw new LLMUnavailableError(`任务 ${task.step} 需要 LLM 且无降级`);
+  return fallback(sources);
 }
 
 // 纯引用助手拆到非 server-only 模块，便于单测；此处转出以保持既有 import 路径不变。

@@ -3,8 +3,8 @@ import { z } from "zod";
 import { type Answers, type CompanyInfo } from "@/data/diagnosis";
 import { scoreDiagnosis } from "@/lib/scoring";
 import { getUserClient } from "@/lib/supabase/userClient";
-import { enforceRateLimit } from "@/lib/ratelimit";
-import { hasLLM } from "@/lib/env";
+import { enforceRateLimit, identityFromRequest } from "@/lib/ratelimit";
+import { canUsePublicAI } from "@/lib/env";
 import { runAITask } from "@/lib/ai/task";
 import { diagnosisInsightTask } from "@/lib/ai/tasks/diagnosisInsight";
 
@@ -97,12 +97,16 @@ export async function POST(req: Request) {
 
   // 3) 可选：LLM 结构化洞察（失败不影响主流程，降级为 rule）
   let source: "llm" | "rule" = "rule";
-  if (hasLLM) {
+  if (canUsePublicAI) {
     try {
       const { output: insight } = await runAITask(
         diagnosisInsightTask,
         { companyInfo: companyInfo as CompanyInfo, result },
-        { sessionId, entityId: assessment.id },
+        {
+          sessionId,
+          entityId: assessment.id,
+          quotaKey: identityFromRequest(req),
+        },
       );
       await supabase
         .from("assessments")

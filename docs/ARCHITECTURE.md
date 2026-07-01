@@ -74,9 +74,9 @@ flowchart TD
 - **可观测性**：`/traces` 读 `llm_traces`，展示成本/延迟(p50/p95)/结构化输出/RAG 引用/错误。
 - **可评测**：在线 `npm run eval` 跑黄金集出 scorecard；**录制式 eval**（`npm run eval:record` 录、`eval:ci` 回放）把响应与裁判结果固化为磁带，使评测能**无密钥、确定性地进 CI**（[ADR-0014](ADR.md#adr-0014--录制式-eval-进-ci离线无密钥的评测门禁)）。
 - **可测试 / CI**：纯逻辑单测 `npm test`（无密钥），GitHub Actions 每次 push/PR 自动跑 **tsc + test + eval 回放 + build**（[ADR-0012](ADR.md#adr-0012--接入-ci自动门禁)）。
-- **优雅降级**：未配 LLM/DB key 时回落规则路径；公网用**固化的真实 AI 快照**（`data/featured/*`）展示真实产物，零成本零滥用。
+- **优雅降级**：未配 LLM/DB key 或 `PUBLIC_AI_ENABLED=false` 时回落规则路径；公网可用**固化的真实 AI 快照**（`data/featured/*`）展示真实产物，零成本零滥用。
 - **密钥安全**：客户端不直连 DB/LLM；service_role 与 LLM key 仅服务端。
-- **滥用 / 成本防护**：按主体（匿名 JWT 的 sub，回退 IP）限流（`lib/ratelimit.ts`，超限 429）；**当日 LLM 成本上限**（`lib/llm/budget.ts`）直接复用 `llm_traces.cost_usd` 做预算闸，超限即按"LLM 不可用"降级为规则路径（[ADR-0013](ADR.md#adr-0013--滥用与成本防护限流--当日成本上限)）。
+- **滥用 / 成本防护**：`PUBLIC_AI_ENABLED` 作为公网真跑总开关；按主体（匿名 JWT 的 sub，回退 IP）限流（`lib/ratelimit.ts`，超限 429）；匿名主体每日 credits（默认 15，`public_ai_usage` + `consume_public_ai_credits` 原子扣减）；**当日 LLM + Embedding 成本上限**（`lib/llm/budget.ts`）直接复用 `llm_traces.cost_usd` 做预算闸，超限即按"LLM 不可用"降级为规则路径（[ADR-0013](ADR.md#adr-0013--滥用与成本防护限流--当日成本上限)）。
 
 ## 6. 目录结构
 

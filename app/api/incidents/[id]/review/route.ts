@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserClient } from "@/lib/supabase/userClient";
-import { enforceRateLimit } from "@/lib/ratelimit";
+import { enforceRateLimit, identityFromRequest } from "@/lib/ratelimit";
 import { runAITask } from "@/lib/ai/task";
 import { incidentReviewTask } from "@/lib/ai/tasks/incidentReview";
 import { transition } from "@/lib/workflow/incident";
@@ -98,7 +98,11 @@ export async function POST(
         analysis: (analysisRow?.analysis as IncidentAnalysis) ?? null,
         tasks: tasks ?? [],
       },
-      { sessionId: incident.session_id, entityId: incident.id },
+      {
+        sessionId: incident.session_id,
+        entityId: incident.id,
+        quotaKey: identityFromRequest(req),
+      },
     );
 
     await supabase.from("review_reports").insert({

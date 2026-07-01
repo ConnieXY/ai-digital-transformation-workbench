@@ -1,6 +1,6 @@
 import "server-only";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
-import { embedOne, hasEmbedding } from "@/lib/rag/embed";
+import { embedOneWithUsage, hasEmbedding } from "@/lib/rag/embed";
 import { estimateCost } from "@/lib/llm/cost";
 import { writeTrace } from "@/lib/trace";
 import { env } from "@/lib/env";
@@ -38,8 +38,13 @@ export async function retrieve(
   const started = Date.now();
 
   let vector: number[];
+  let embedModel = env.embeddingModel;
+  let embedTokens = 0;
   try {
-    vector = await embedOne(query);
+    const embedded = await embedOneWithUsage(query);
+    vector = embedded.vector;
+    embedModel = embedded.model;
+    embedTokens = embedded.tokens;
   } catch (e) {
     await writeTrace({
       sessionId,
@@ -47,7 +52,7 @@ export async function retrieve(
       entityId,
       step: "rag.embed",
       operation: "embed",
-      model: env.embeddingModel,
+      model: embedModel,
       status: "error",
       error: e instanceof Error ? e.message : String(e),
       latencyMs: Date.now() - started,
@@ -67,12 +72,13 @@ export async function retrieve(
     entityId,
     step: "rag.retrieve",
     operation: "embed",
-    model: env.embeddingModel,
+    model: embedModel,
     status: error ? "error" : "ok",
     error: error?.message,
     request: { query, k, docType },
     response: { matched: data?.length ?? 0 },
-    costUsd: estimateCost(env.embeddingModel, 0, 0),
+    inputTokens: embedTokens,
+    costUsd: estimateCost(embedModel, embedTokens, 0),
     latencyMs: Date.now() - started,
   });
 

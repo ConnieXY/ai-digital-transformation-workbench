@@ -68,7 +68,14 @@ export async function embedTexts(texts: string[]): Promise<EmbedResult> {
 }
 
 /** 单条文本 embedding。 */
+export async function embedOneWithUsage(
+  text: string,
+): Promise<{ vector: number[]; model: string; tokens: number }> {
+  const { vectors, model, tokens } = await embedTexts([text]);
+  return { vector: vectors[0], model, tokens };
+}
+
+/** 单条文本 embedding（兼容旧调用）。 */
 export async function embedOne(text: string): Promise<number[]> {
-  const { vectors } = await embedTexts([text]);
-  return vectors[0];
+  return (await embedOneWithUsage(text)).vector;
 }

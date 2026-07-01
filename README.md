@@ -39,7 +39,7 @@ flowchart TB
 - **一条转型旅程**：诊断结论自动喂给方案，方案落到运营闭环，并给出**真实数据派生的闭环成效指标**（任务闭环率 / AI 自动化占比 / 可追溯审计数）。
 - **可观测**：每次 LLM/embedding 调用写 `llm_traces`，`/traces` 看成本/延迟(p50·p95)/结构化输出/RAG 引用/错误。
 - **可评测 + CI**：`npm run eval` 跑黄金集（schema/引用/**忠实度 LLM-as-judge**/召回）；**录制式回放**让评测无密钥进 CI（`tsc + 单测 + eval 回放 + build` 自动门禁）。
-- **工程底座**：数据隔离（匿名登录 + Postgres RLS）、滥用/成本防护（限流 + 当日成本上限）、provider 抽象（不写死厂商）、优雅降级、密钥仅服务端、公网真实快照。
+- **工程底座**：数据隔离（匿名登录 + Postgres RLS）、滥用/成本防护（公网真跑总开关 + 匿名每日 credits + 当日成本上限 + 限流）、provider 抽象（不写死厂商）、优雅降级、密钥仅服务端、公网真实快照。
 
 ## 关键结果
 
@@ -75,11 +75,11 @@ npm test                       # 纯函数单测（无密钥）
 npm run eval:ci                # 录制式 eval 回放（无密钥、离线）
 ```
 
-> 未配 key 时自动降级为规则路径，公网即此模式 + 真实 AI 快照（不触发付费调用）。
+> 默认 `PUBLIC_AI_ENABLED=false` 时自动降级为规则路径，公网可保持真实 AI 快照（不触发付费调用）。需要公网真跑时，显式设置 `PUBLIC_AI_ENABLED=true`；默认每个匿名主体每日 15 credits，全站每日 LLM + Embedding 成本上限为 $1。
 
 ## 状态与边界（诚实声明）
 
-**演示 / 预览版**。已知取舍与路线图见 [ADR-0008](docs/ADR.md#adr-0008--已知缺口与路线图诚实边界)：公网为只读真实快照、trace 为平表。工程底座已具备：数据隔离（匿名登录 + Postgres RLS 修复 IDOR，[ADR-0010](docs/ADR.md#adr-0010--匿名登录--rls-数据隔离修复-idor)）、滥用与成本防护（限流 + 当日 LLM 成本上限，超限优雅降级，[ADR-0013](docs/ADR.md#adr-0013--滥用与成本防护限流--当日成本上限)）、CI 自动门禁（tsc + 纯函数单测 + **录制式 eval 回放**，全程无密钥，[ADR-0012](docs/ADR.md#adr-0012--接入-ci自动门禁) / [ADR-0014](docs/ADR.md#adr-0014--录制式-eval-进-ci离线无密钥的评测门禁)）。仍待补：真正账号体系（匿名身份绑定浏览器）、组织级多租户、API 集成测试、trace 升级 span 树。
+**演示 / 预览版**。已知取舍与路线图见 [ADR-0008](docs/ADR.md#adr-0008--已知缺口与路线图诚实边界)：公网默认仍可作为真实快照模式，打开 `PUBLIC_AI_ENABLED=true` 后支持有限额真跑，trace 为平表。工程底座已具备：数据隔离（匿名登录 + Postgres RLS 修复 IDOR，[ADR-0010](docs/ADR.md#adr-0010--匿名登录--rls-数据隔离修复-idor)）、滥用与成本防护（公网真跑总开关 + 匿名每日 credits + 当日 LLM/Embedding 成本上限 + 限流，超限优雅降级，[ADR-0013](docs/ADR.md#adr-0013--滥用与成本防护限流--当日成本上限)）、CI 自动门禁（tsc + 纯函数单测 + **录制式 eval 回放**，全程无密钥，[ADR-0012](docs/ADR.md#adr-0012--接入-ci自动门禁) / [ADR-0014](docs/ADR.md#adr-0014--录制式-eval-进-ci离线无密钥的评测门禁)）。仍待补：真正账号体系（匿名身份绑定浏览器）、组织级多租户、API 集成测试、trace 升级 span 树。
 
 ## 作者
 
