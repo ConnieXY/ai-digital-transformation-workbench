@@ -119,6 +119,11 @@ export default function TaskBoardPage() {
     router.push(`/manufacturing-demo/review-report?id=${incidentId}`);
   }
 
+  function handleRestartIncident() {
+    localStorage.removeItem(INCIDENT_STORAGE_KEY);
+    router.push("/manufacturing-demo/incident-submit");
+  }
+
   if (!mounted) {
     return (
       <PageShell>
@@ -323,7 +328,7 @@ export default function TaskBoardPage() {
         )}
 
         {/* 底部按钮 */}
-        <div className="mt-10 flex justify-center">
+        <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <button
             type="button"
             onClick={handleReview}
@@ -332,6 +337,13 @@ export default function TaskBoardPage() {
           >
             {reviewing ? "生成中…" : "生成复盘报告"}
             {!reviewing && <span aria-hidden>→</span>}
+          </button>
+          <button
+            type="button"
+            onClick={handleRestartIncident}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
+          >
+            重新上报
           </button>
         </div>
       </section>

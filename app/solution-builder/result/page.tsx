@@ -9,12 +9,14 @@ import { type SolutionInput, SOLUTION_INPUT_KEY } from "@/data/solution";
 import type { GroundedSolution, SolutionSource } from "@/lib/schemas/solution";
 import { solutionFallback } from "@/lib/solution/fallback";
 import { apiFetch } from "@/lib/api";
+import { FEATURED } from "@/data/featured";
 
 interface GroundedPayload {
   input: SolutionInput;
   grounded: GroundedSolution;
   sources: SolutionSource[];
   source: "llm" | "rule";
+  canClearInput: boolean;
 }
 
 export default function SolutionResultPage() {
@@ -31,7 +33,13 @@ export default function SolutionResultPage() {
         const raw = localStorage.getItem(SOLUTION_INPUT_KEY);
         if (!raw) return;
         const input = JSON.parse(raw) as SolutionInput;
-        setPayload({ input, grounded: solutionFallback(input), sources: [], source: "rule" });
+        setPayload({
+          input,
+          grounded: solutionFallback(input),
+          sources: [],
+          source: "rule",
+          canClearInput: true,
+        });
       } catch {
         setPayload(null);
       }
@@ -52,6 +60,7 @@ export default function SolutionResultPage() {
             grounded: d.grounded,
             sources: d.sources ?? [],
             source: d.source === "rule" ? "rule" : "llm",
+            canClearInput: id !== FEATURED.solutionId,
           });
         } else {
           loadLocal();
@@ -115,6 +124,7 @@ export default function SolutionResultPage() {
         grounded={payload.grounded}
         sources={payload.sources}
         source={payload.source}
+        canClearInput={payload.canClearInput}
       />
     </PageShell>
   );

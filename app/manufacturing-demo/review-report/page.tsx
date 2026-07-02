@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import PageShell from "@/components/PageShell";
 import ReviewReportView from "@/components/manufacturing/ReviewReportView";
 import { apiFetch } from "@/lib/api";
@@ -47,6 +48,7 @@ interface LlmReportPayload {
 }
 
 export default function ReviewReportPage() {
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [incident, setIncident] = useState<IncidentInput | null>(null);
@@ -187,6 +189,11 @@ export default function ReviewReportPage() {
         .map((t) => (t as string).replace(/\s+/g, "")),
     ),
   );
+
+  function handleRestartIncident() {
+    localStorage.removeItem(INCIDENT_STORAGE_KEY);
+    router.push("/manufacturing-demo/incident-submit");
+  }
 
   return (
     <PageShell>
@@ -372,6 +379,13 @@ export default function ReviewReportPage() {
           >
             返回工作台首页
           </Link>
+          <button
+            type="button"
+            onClick={handleRestartIncident}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
+          >
+            重新上报
+          </button>
         </div>
       </div>
     </PageShell>

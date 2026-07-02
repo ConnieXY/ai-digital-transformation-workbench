@@ -1,6 +1,8 @@
 import Link from "next/link";
+import ClearStoredStateButton from "@/components/ClearStoredStateButton";
 import type { GroundedSolution, SolutionSource } from "@/lib/schemas/solution";
-import type { SolutionInput } from "@/data/solution";
+import { type SolutionInput, SOLUTION_INPUT_KEY } from "@/data/solution";
+import { SOLUTION_CONTEXT_KEY } from "@/data/diagnosis";
 
 const docTypeLabel: Record<string, string> = {
   sop: "SOP",
@@ -15,11 +17,13 @@ export default function GroundedSolutionView({
   grounded,
   sources,
   source = "llm",
+  canClearInput = true,
 }: {
   input: SolutionInput;
   grounded: GroundedSolution;
   sources: SolutionSource[];
   source?: "llm" | "rule";
+  canClearInput?: boolean;
 }) {
   const isRule = source === "rule";
   return (
@@ -198,6 +202,14 @@ export default function GroundedSolutionView({
           >
             查看制造业场景 Demo
           </Link>
+          {canClearInput && (
+            <ClearStoredStateButton
+              label="清空重填"
+              storageKeys={[SOLUTION_INPUT_KEY, SOLUTION_CONTEXT_KEY]}
+              href="/solution-builder/input"
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
+            />
+          )}
         </div>
       </div>
     </PageBody>

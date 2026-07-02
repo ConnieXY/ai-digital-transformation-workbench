@@ -90,6 +90,14 @@ export default function SolutionInputPage() {
     setError(null);
   }
 
+  function clearSolutionInput() {
+    localStorage.removeItem(SOLUTION_CONTEXT_KEY);
+    localStorage.removeItem(SOLUTION_INPUT_KEY);
+    setInput(emptySolutionInput);
+    setFromDiagnosis(null);
+    setError(null);
+  }
+
   async function handleSubmit() {
     if (input.painPoints.length === 0) {
       setError("请至少选择一个业务痛点，以便生成针对性的解决方案。");
@@ -123,14 +131,16 @@ export default function SolutionInputPage() {
       <section className="border-b border-slate-200 bg-white">
         <div className="container-page py-12 sm:py-14">
           {fromDiagnosis && (
-            <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800">
-              <span aria-hidden className="mt-0.5">
-                🔗
-              </span>
-              <p className="leading-relaxed">
-                已继承自<span className="font-semibold">企业诊断</span>（{fromDiagnosis}）：
-                行业、规模、最弱维度对应的目标与痛点、推荐场景已自动带入，可直接生成或微调。
-              </p>
+            <div className="mb-5 flex flex-col gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-start gap-2.5">
+                <span aria-hidden className="mt-0.5">
+                  🔗
+                </span>
+                <p className="leading-relaxed">
+                  已继承自<span className="font-semibold">企业诊断</span>（{fromDiagnosis}）：
+                  行业、规模、最弱维度对应的目标与痛点、推荐场景已自动带入，可直接生成或微调。
+                </p>
+              </div>
             </div>
           )}
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -147,6 +157,15 @@ export default function SolutionInputPage() {
             >
               <span aria-hidden>✨</span> 填入示例
             </button>
+            {fromDiagnosis && (
+              <button
+                type="button"
+                onClick={clearSolutionInput}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-ink-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
+              >
+                清空重填
+              </button>
+            )}
           </div>
           <h1 className="mt-6 text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">
             输入行业与客户信息

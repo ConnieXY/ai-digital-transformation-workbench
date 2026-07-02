@@ -138,6 +138,11 @@ export default function AnalysisPage() {
     router.push(`/manufacturing-demo/task-board?id=${incidentId}`);
   }
 
+  function handleRestartIncident() {
+    localStorage.removeItem(INCIDENT_STORAGE_KEY);
+    router.push("/manufacturing-demo/incident-submit");
+  }
+
   if (!mounted) {
     return (
       <PageShell>
@@ -406,6 +411,13 @@ export default function AnalysisPage() {
           >
             返回修改上报信息
           </Link>
+          <button
+            type="button"
+            onClick={handleRestartIncident}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
+          >
+            重新上报
+          </button>
         </div>
       </div>
     </PageShell>

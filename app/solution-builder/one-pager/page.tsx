@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import PageShell from "@/components/PageShell";
+import ClearStoredStateButton from "@/components/ClearStoredStateButton";
+import { SOLUTION_CONTEXT_KEY } from "@/data/diagnosis";
 import { type SolutionInput, SOLUTION_INPUT_KEY } from "@/data/solution";
 import { generateSolution } from "@/lib/solutionGenerator";
 
@@ -205,6 +207,12 @@ export default function OnePagerPage() {
           >
             返回完整方案
           </Link>
+          <ClearStoredStateButton
+            label="清空重填"
+            storageKeys={[SOLUTION_INPUT_KEY, SOLUTION_CONTEXT_KEY]}
+            href="/solution-builder/input"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
+          />
         </div>
       </div>
     </PageShell>

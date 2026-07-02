@@ -13,6 +13,7 @@ import {
   DIAGNOSIS_STORAGE_KEY,
   SOLUTION_CONTEXT_KEY,
 } from "@/data/diagnosis";
+import { SOLUTION_INPUT_KEY } from "@/data/solution";
 import { type DiagnosisResult, scoreDiagnosis } from "@/lib/scoring";
 import type { DiagnosisInsight } from "@/lib/schemas/diagnosis";
 
@@ -158,6 +159,13 @@ export default function ReportPage() {
     router.push("/solution-builder");
   }
 
+  function handleRestartDiagnosis() {
+    localStorage.removeItem(DIAGNOSIS_STORAGE_KEY);
+    localStorage.removeItem(SOLUTION_CONTEXT_KEY);
+    localStorage.removeItem(SOLUTION_INPUT_KEY);
+    router.push("/diagnosis/questionnaire");
+  }
+
   const infoItems = [
     { label: "企业名称", value: companyInfo.companyName || "—" },
     { label: "所属行业", value: companyInfo.industry || "—" },
@@ -209,6 +217,13 @@ export default function ReportPage() {
                   {source === "llm" ? "AI 生成洞察" : "规则引擎（未接 LLM）"}
                 </span>
               )}
+              <button
+                type="button"
+                onClick={handleRestartDiagnosis}
+                className="mt-1 inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-ink-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
+              >
+                重新诊断
+              </button>
             </div>
           </div>
         </div>

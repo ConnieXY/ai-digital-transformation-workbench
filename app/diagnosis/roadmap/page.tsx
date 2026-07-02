@@ -12,6 +12,7 @@ import {
   DIAGNOSIS_STORAGE_KEY,
   SOLUTION_CONTEXT_KEY,
 } from "@/data/diagnosis";
+import { SOLUTION_INPUT_KEY } from "@/data/solution";
 import { scoreDiagnosis } from "@/lib/scoring";
 
 /** 30/60/90 天三阶段落地路线图（结构稳定，与诊断结论配合使用）。 */
@@ -119,6 +120,13 @@ export default function RoadmapPage() {
     router.push("/solution-builder");
   }
 
+  function handleRestartDiagnosis() {
+    localStorage.removeItem(DIAGNOSIS_STORAGE_KEY);
+    localStorage.removeItem(SOLUTION_CONTEXT_KEY);
+    localStorage.removeItem(SOLUTION_INPUT_KEY);
+    router.push("/diagnosis/questionnaire");
+  }
+
   return (
     <PageShell>
       {/* 抬头 */}
@@ -204,6 +212,13 @@ export default function RoadmapPage() {
           >
             生成行业解决方案
             <span aria-hidden>→</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleRestartDiagnosis}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
+          >
+            重新诊断
           </button>
         </div>
       </div>

@@ -1,8 +1,10 @@
 import Link from "next/link";
+import ClearStoredStateButton from "@/components/ClearStoredStateButton";
 import type { ReviewReport } from "@/lib/schemas/incident";
 import type { LoopOutcome } from "@/lib/manufacturing/outcome";
 import JourneySteps from "@/components/JourneySteps";
 import OutcomePanel from "@/components/manufacturing/OutcomePanel";
+import { INCIDENT_STORAGE_KEY } from "@/data/manufacturing";
 
 interface IncidentLike {
   product_name?: string | null;
@@ -120,6 +122,12 @@ export default function ReviewReportView({
           >
             返回工作台首页
           </Link>
+          <ClearStoredStateButton
+            label="重新上报"
+            storageKeys={[INCIDENT_STORAGE_KEY]}
+            href="/manufacturing-demo/incident-submit"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-ink-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
+          />
         </div>
       </div>
     </>
